@@ -1,10 +1,10 @@
-import { json, type MetaFunction } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, Link } from "@remix-run/react";
 import { isEnglish } from "~/utils/language";
 import { Layers, ChevronRight } from "lucide-react";
 import { getYouTubeThumbnail } from "~/utils/youtube";
-
 import { CompactHero } from "~/components/CompactHero";
+import { getDbPrograms, getDbVideos } from "~/utils/db.server";
 
 export const meta: MetaFunction = () => [
   { title: "Programs & Series | Samastha Graph" },
@@ -14,24 +14,39 @@ export const meta: MetaFunction = () => [
   { tagName: "link", rel: "alternate", hreflang: "ml", href: "https://samasthagraph.pages.dev/videos/programs" },
 ];
 
-export const loader = async () => {
-  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
-  const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
+export const loader = async ({ context }: LoaderFunctionArgs) => {
+  const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+  const [dbPrograms, dbVideos] = await Promise.all([
+    getDbPrograms(env?.DB),
+    getDbVideos(env?.DB)
+  ]);
 
-  const programs = Object.entries(programsGlob)
-    .map(([path, content]: any) => ({
-      slug: path.split("/").pop()?.replace(".json", ""),
-      ...content,
-    }))
+  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
+
+  const programMap = new Map<string, any>();
+  staticPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+  dbPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+
+  const programs = Array.from(programMap.values())
     .filter(isEnglish)
     .filter((p: any) => p.status === "published")
     .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  const videos = Object.entries(videosGlob)
-    .map(([path, content]: any) => ({
-      ...content,
-    }))
-    .filter((v: any) => v.status === "published");
+  const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
+  const staticVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
+
+  const videoMap = new Map<string, any>();
+  staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
+  dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
+
+  const videos = Array.from(videoMap.values()).filter((v: any) => v.status === "published");
 
   return json({ programs, videos });
 };

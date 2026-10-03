@@ -1,11 +1,19 @@
-import { json } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { isEnglish } from "~/utils/language";
 import PodcastsIndex from "./podcasts._index";
 import { getPodcastShows, fetchLiveSpotifyPodcasts, type PodcastShow } from "~/utils/podcasts.server";
 import podcastShowsConfig from "../content/settings/podcast-shows.json";
+import { getDbPodcasts, getDbSetting } from "~/utils/db.server";
 
-export const loader = async () => {
-  const shows: PodcastShow[] = getPodcastShows((podcastShowsConfig as any)?.shows);
+export const loader = async ({ context }: LoaderFunctionArgs) => {
+  const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+  const [dbPodcasts, dbShowsSetting] = await Promise.all([
+    getDbPodcasts(env?.DB),
+    getDbSetting(env?.DB, "podcast-shows")
+  ]);
+
+  const showsSource = dbShowsSetting?.shows || (podcastShowsConfig as any)?.shows;
+  const shows: PodcastShow[] = getPodcastShows(showsSource);
   let livePodcasts: any[] = [];
   try {
     livePodcasts = await fetchLiveSpotifyPodcasts(shows);
@@ -18,6 +26,7 @@ export const loader = async () => {
 
   const podcastMap = new Map<string, any>();
   localPodcasts.forEach(ep => podcastMap.set(ep.slug, ep));
+  dbPodcasts.forEach(ep => podcastMap.set(ep.slug, ep));
   livePodcasts.forEach(ep => podcastMap.set(ep.slug, ep));
 
   const podcastsData = Array.from(podcastMap.values())
@@ -28,4 +37,5 @@ export const loader = async () => {
 };
 
 export default PodcastsIndex;
+
 

@@ -5,6 +5,7 @@ import { PlayCircle, Share2, Facebook, Twitter, MessageCircle, Clock, Tag, Searc
 import { OptimizedImage } from "~/components/OptimizedImage";
 import { isEnglish } from "~/utils/language";
 import { extractYouTubeId, getYouTubeThumbnail } from "~/utils/youtube";
+import { getDbVideos } from "~/utils/db.server";
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {
@@ -66,9 +67,9 @@ export const loader = async ({ params, context, request }: any) => {
     const s = path.split('/').pop()?.replace('.json', '');
     localMap.set(s, { slug: s, ...content });
   });
-  Object.entries(mdxVideos).forEach(([path, content]: any) => {
-    const s = path.split('/').pop()?.replace('.mdx', '');
-    localMap.set(s, { slug: s, ...content });
+  const dbVideos = await getDbVideos(env?.DB);
+  dbVideos.forEach((v: any) => {
+    if (v.slug) localMap.set(v.slug, v);
   });
 
   if (githubToken) {

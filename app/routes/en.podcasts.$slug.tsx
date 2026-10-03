@@ -7,6 +7,7 @@ import { PodcastArtwork } from '../components/PodcastArtwork';
 import { PodcastRecommendations } from '../components/PodcastRecommendations';
 import { isEnglish } from '~/utils/language';
 import { fetchLiveSpotifyPodcasts } from '~/utils/podcasts.server';
+import { getDbPodcasts } from '~/utils/db.server';
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {
@@ -65,6 +66,11 @@ export const loader = async ({ params, context, request }: any) => {
   Object.entries(localPodcasts).forEach(([path, content]: any) => {
     const s = path.split('/').pop()?.replace('.json', '');
     localMap.set(s, { slug: s, ...content });
+  });
+
+  const dbPodcasts = await getDbPodcasts(env?.DB);
+  dbPodcasts.forEach((p: any) => {
+    if (p.slug) localMap.set(p.slug, p);
   });
 
   try {

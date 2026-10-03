@@ -25,7 +25,10 @@ function parseMdx(content: string) {
   }
 }
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+import { getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms } from "~/utils/db.server";
+
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
+  const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
   const url = new URL(request.url);
   const q = url.searchParams.get("q") || "";
   const query = q.toLowerCase().trim();
@@ -36,7 +39,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({ q, results });
   }
 
-  // Load Content
+  // Load Content from D1
+  const [dbArticles, dbVideos, dbPodcasts, dbPrograms] = await Promise.all([
+    getDbArticles(env?.DB),
+    getDbVideos(env?.DB),
+    getDbPodcasts(env?.DB),
+    getDbPrograms(env?.DB)
+  ]);
+
+  // Load Static Files
   const articlesJson = import.meta.glob("../content/articles/*.json", { import: 'default', eager: true });
   const articlesMdx = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
   
@@ -48,20 +59,59 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const podcastsJson = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
   const podcastsMdx = import.meta.glob("../content/podcasts/*.mdx", { query: '?raw', import: 'default', eager: true });
 
-  const processEntries = (entries: Record<string, any>, type: SearchResult['type'], urlPrefix: string, isMdx = false) => {
-    Object.entries(entries).forEach(([path, content]) => {
-      const slug = path.split('/').pop()?.replace(/\.(json|mdx)$/, '') || '';
-      let data = isMdx ? parseMdx(content as string) : content;
-      
+  const articleMap = new Map<string, any>();
+  const videoMap = new Map<string, any>();
+  const programMap = new Map<string, any>();
+  const podcastMap = new Map<string, any>();
+
+  Object.entries(articlesJson).forEach(([path, content]) => {
+    const slug = path.split('/').pop()?.replace('.json', '') || '';
+    articleMap.set(slug, content);
+  });
+  Object.entries(articlesMdx).forEach(([path, content]) => {
+    const slug = path.split('/').pop()?.replace('.mdx', '') || '';
+    articleMap.set(slug, parseMdx(content as string));
+  });
+  dbArticles.forEach((a: any) => { if (a.slug) articleMap.set(a.slug, a); });
+
+  Object.entries(videosJson).forEach(([path, content]: any) => {
+    const slug = path.split('/').pop()?.replace('.json', '') || '';
+    videoMap.set(slug, content);
+  });
+  Object.entries(videosMdx).forEach(([path, content]) => {
+    const slug = path.split('/').pop()?.replace('.mdx', '') || '';
+    videoMap.set(slug, parseMdx(content as string));
+  });
+  dbVideos.forEach((v: any) => { if (v.slug) videoMap.set(v.slug, v); });
+
+  Object.entries(programsJson).forEach(([path, content]: any) => {
+    const slug = path.split('/').pop()?.replace('.json', '') || '';
+    programMap.set(slug, content);
+  });
+  dbPrograms.forEach((p: any) => { if (p.slug) programMap.set(p.slug, p); });
+
+  Object.entries(podcastsJson).forEach(([path, content]: any) => {
+    const slug = path.split('/').pop()?.replace('.json', '') || '';
+    podcastMap.set(slug, content);
+  });
+  Object.entries(podcastsMdx).forEach(([path, content]) => {
+    const slug = path.split('/').pop()?.replace('.mdx', '') || '';
+    podcastMap.set(slug, parseMdx(content as string));
+  });
+  dbPodcasts.forEach((p: any) => { if (p.slug) podcastMap.set(p.slug, p); });
+
+  const processEntries = (map: Map<string, any>, type: SearchResult['type'], urlPrefix: string) => {
+    map.forEach((data, slug) => {
       if (data.status === "draft") return;
 
       const title = data.title || "";
       const excerpt = data.excerpt || data.description || "";
+      const author = data.author || data.host || "";
       
-      const searchContent = `${title} ${excerpt} ${slug}`.toLowerCase();
+      const searchContent = `${title} ${excerpt} ${slug} ${author}`.toLowerCase();
       
       if (searchContent.includes(query)) {
-        let thumbnail = data.coverImage || data.thumbnail || data.image;
+        let thumbnail = data.coverImage || data.thumbnail || data.image || data.thumbnailUrl;
         if (type === 'video' && !thumbnail && data.youtubeId) {
           thumbnail = `https://img.youtube.com/vi/${data.youtubeId}/hqdefault.jpg`;
         }
@@ -74,22 +124,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           url: `${data.language === 'en' ? '/en' : ''}${urlPrefix}${slug}`,
           thumbnail,
           publishedAt: data.publishedAt,
-          language: data.language || 'ml' // default malayalam based on site convention
+          language: data.language || 'ml'
         });
       }
     });
   };
 
-  processEntries(articlesJson, 'article', '/articles/');
-  processEntries(articlesMdx, 'article', '/articles/', true);
-  
-  processEntries(videosJson, 'video', '/videos/');
-  processEntries(videosMdx, 'video', '/videos/', true);
-  
-  processEntries(programsJson, 'program', '/videos/programs/');
-  
-  processEntries(podcastsJson, 'podcast', '/podcasts/');
-  processEntries(podcastsMdx, 'podcast', '/podcasts/', true);
+  processEntries(articleMap, 'article', '/articles/');
+  processEntries(videoMap, 'video', '/videos/');
+  processEntries(programMap, 'program', '/videos/programs/');
+  processEntries(podcastMap, 'podcast', '/podcasts/');
 
   // Sort by date descending
   results.sort((a, b) => {

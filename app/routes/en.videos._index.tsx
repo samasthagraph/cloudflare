@@ -1,13 +1,21 @@
-import { json } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { isEnglish } from "~/utils/language";
 import { fetchYouTubePlaylistVideos } from "~/utils/youtube";
 import VideosIndex from "./videos._index";
+import { getDbVideos, getDbPrograms, getDbSetting } from "~/utils/db.server";
 
-export const loader = async () => {
+export const loader = async ({ context }: LoaderFunctionArgs) => {
+  const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+  const [dbVideos, dbPrograms, dbSpotlight] = await Promise.all([
+    getDbVideos(env?.DB),
+    getDbPrograms(env?.DB),
+    getDbSetting(env?.DB, "spotlight")
+  ]);
+
   const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
   const mdxVideos = import.meta.glob("../content/videos/*.mdx", { query: '?raw', import: 'default', eager: true });
   
-  const videosData = [
+  const staticVideos = [
     ...Object.entries(jsonVideos).map(([path, content]: any) => {
       return { slug: path.split('/').pop()?.replace('.json', ''), ...content };
     }),
@@ -15,15 +23,28 @@ export const loader = async () => {
       const slug = path.split('/').pop()?.replace('.mdx', '');
       return { slug, ...content };
     })
-  ].filter(isEnglish).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  ];
 
-  // Load programs (English only, published only)
+  const videoMap = new Map<string, any>();
+  staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
+  dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
+
+  const videosData = Array.from(videoMap.values())
+    .filter(isEnglish)
+    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+
+  // Load programs
   const programsGlob = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
-  const programs = Object.entries(programsGlob)
-    .map(([path, content]: any) => ({
-      slug: path.split('/').pop()?.replace('.json', ''),
-      ...content,
-    }))
+  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+    slug: path.split('/').pop()?.replace('.json', ''),
+    ...content,
+  }));
+
+  const programMap = new Map<string, any>();
+  staticPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+  dbPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+
+  const programs = Array.from(programMap.values())
     .filter(isEnglish)
     .filter((p: any) => p.status === 'published')
     .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
@@ -49,11 +70,13 @@ export const loader = async () => {
   );
 
   // Load spotlight settings
-  const spotlightGlob = import.meta.glob("../content/settings/spotlight.json", { import: 'default', eager: true });
-  let spotlight: any = null;
-  for (const content of Object.values(spotlightGlob)) {
-    spotlight = content as any;
-    break;
+  let spotlight = dbSpotlight;
+  if (!spotlight) {
+    const spotlightGlob = import.meta.glob("../content/settings/spotlight.json", { import: 'default', eager: true });
+    for (const content of Object.values(spotlightGlob)) {
+      spotlight = content as any;
+      break;
+    }
   }
 
   return json({ videos: videosData, programs, programCounts, spotlight });

@@ -1,23 +1,34 @@
-import { json } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import fm from "front-matter";
 import { isEnglish } from "~/utils/language";
 import ArticlesIndex from "./articles._index";
+import { getDbArticles } from "~/utils/db.server";
 
-export const loader = async () => {
+export const loader = async ({ context }: LoaderFunctionArgs) => {
+  const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+  const dbArticles = await getDbArticles(env?.DB);
+
   const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
   
-  const articlesData = Object.entries(mdxFiles).map(([path, content]) => {
+  const staticArticles = Object.entries(mdxFiles).map(([path, content]) => {
     const slug = path.split('/').pop()?.replace('.mdx', '');
     const { attributes } = fm(content as string);
     return {
       slug,
       ...(attributes as any)
     };
-  }).filter((a: any) => a.status !== 'draft' && isEnglish(a));
+  });
 
-  const articles = articlesData.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  const map = new Map<string, any>();
+  staticArticles.forEach(a => { if (a.slug) map.set(a.slug, a); });
+  dbArticles.forEach(a => { if (a.slug) map.set(a.slug, a); });
 
-  return json({ articles });
+  const articlesData = Array.from(map.values())
+    .filter((a: any) => a.status !== 'draft' && isEnglish(a))
+    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+
+  return json({ articles: articlesData });
 };
 
 export default ArticlesIndex;
+

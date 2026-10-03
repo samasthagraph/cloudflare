@@ -1145,12 +1145,13 @@ ${body}`;
 export default function AdminDashboard() {
   const actionDataAny = useActionData<typeof action>() as any;
   const actionData = actionDataAny;
+  const loaderData = useLoaderData<typeof loader>();
 
-  const [articles, setArticles] = useState(useLoaderData<typeof loader>().articles);
-  const [videos, setVideos] = useState(useLoaderData<typeof loader>().videos);
-  const [podcasts, setPodcasts] = useState(useLoaderData<typeof loader>().podcasts);
-  const [programs, setPrograms] = useState(useLoaderData<typeof loader>().programs as any[]);
-  const [spotlightSettings] = useState(useLoaderData<typeof loader>().spotlightSettings as any);
+  const [articles, setArticles] = useState(loaderData.articles || []);
+  const [videos, setVideos] = useState(loaderData.videos || []);
+  const [podcasts, setPodcasts] = useState(loaderData.podcasts || []);
+  const [programs, setPrograms] = useState((loaderData.programs || []) as any[]);
+  const [spotlightSettings] = useState(loaderData.spotlightSettings as any);
   const [editingProgram, setEditingProgram] = useState<any>(null);
   const [programPlaylistInput, setProgramPlaylistInput] = useState("");
   const [programThumbnailPreview, setProgramThumbnailPreview] = useState("");
@@ -1165,7 +1166,24 @@ export default function AdminDashboard() {
     podcastPlatformSettings,
     podcastShowsSettings,
     authorsSettings
-  } = useLoaderData<typeof loader>();
+  } = loaderData;
+
+  // Keep state updated whenever server loader revalidates
+  useEffect(() => {
+    if (loaderData?.articles) setArticles(loaderData.articles);
+  }, [loaderData?.articles]);
+
+  useEffect(() => {
+    if (loaderData?.videos) setVideos(loaderData.videos);
+  }, [loaderData?.videos]);
+
+  useEffect(() => {
+    if (loaderData?.podcasts) setPodcasts(loaderData.podcasts);
+  }, [loaderData?.podcasts]);
+
+  useEffect(() => {
+    if (loaderData?.programs) setPrograms(loaderData.programs);
+  }, [loaderData?.programs]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") || searchParams.get("view");
