@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit3, User, Image, CheckCircle, ExternalLink, Globe, Sparkles } from 'lucide-react';
+import { useSubmit } from '@remix-run/react';
 
 export interface Author {
   id: string;
@@ -17,6 +18,7 @@ interface AuthorsAdminProps {
 }
 
 export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
+  const submit = useSubmit();
   const [authors, setAuthors] = useState<Author[]>(authorsSettings?.authors || []);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,6 +33,13 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
     twitter: '',
     website: ''
   });
+
+  // Sync state when server data updates
+  useEffect(() => {
+    if (authorsSettings?.authors) {
+      setAuthors(authorsSettings.authors);
+    }
+  }, [authorsSettings]);
 
   const openAddModal = () => {
     setEditingIndex(null);
@@ -53,8 +62,14 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
     setIsModalOpen(true);
   };
 
-  const saveAuthor = (e: React.FormEvent) => {
-    e.preventDefault();
+  const persistAuthors = (updatedList: Author[]) => {
+    const formData = new FormData();
+    formData.append("intent", "saveAuthors");
+    formData.append("authorsData", JSON.stringify({ authors: updatedList }));
+    submit(formData, { method: "post" });
+  };
+
+  const saveAuthor = () => {
     if (!formState.name.trim() && !formState.nameMl?.trim()) {
       alert('Please enter at least an English or Malayalam author name.');
       return;
@@ -63,8 +78,8 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
     const updated = [...authors];
     const authorPayload: Author = {
       ...formState,
-      name: formState.name || formState.nameMl || 'Author',
-      id: formState.id || `author-${Date.now()}`
+      name: formState.name.trim() || formState.nameMl?.trim() || 'Author',
+      id: formState.id.trim() || `author-${Date.now()}`
     };
 
     if (editingIndex !== null) {
@@ -75,17 +90,28 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
 
     setAuthors(updated);
     setIsModalOpen(false);
+    persistAuthors(updated);
   };
 
   const deleteAuthor = (index: number) => {
-    if (confirm(`Are you sure you want to delete "${authors[index].name || authors[index].nameMl}"?`)) {
-      setAuthors(authors.filter((_, i) => i !== index));
+    const authorToDelete = authors[index];
+    if (confirm(`Are you sure you want to delete "${authorToDelete.name || authorToDelete.nameMl || 'this author'}"?`)) {
+      const updated = authors.filter((_, i) => i !== index);
+      setAuthors(updated);
+      persistAuthors(updated);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      saveAuthor();
     }
   };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      {/* Hidden Form Payload */}
+      {/* Hidden Form Payload for outer parent form */}
       <input type="hidden" name="authorsData" value={JSON.stringify({ authors })} />
 
       {/* Header Banner */}
@@ -214,7 +240,7 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
               </button>
             </div>
 
-            <form onSubmit={saveAuthor} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+            <div onKeyDown={handleKeyDown} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -312,13 +338,14 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={saveAuthor}
                   className="bg-[#15664a] hover:bg-[#0f4d38] text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md transition-colors"
                 >
                   {editingIndex !== null ? 'Save Changes' : 'Add Author'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

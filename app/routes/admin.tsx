@@ -637,7 +637,11 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "authors", parsedData);
+        try {
+          await saveDbSetting(env.DB, "authors", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting authors error:", dbErr);
+        }
       }
 
       await commitToGitHub({
@@ -648,7 +652,7 @@ export const action = async ({ request, context }: any) => {
         content: jsonContent,
         message: "update authors list"
       });
-      return json({ success: true, message: "Authors saved successfully!" });
+      return json({ success: true, intent: "saveAuthors", message: "Authors saved successfully!" });
     }
     if (intent === "delete") {
       const path = formData.get("path") as string;
