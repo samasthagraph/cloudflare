@@ -25,7 +25,7 @@ const themeMap: Record<string, { title: string; body: string; align: string }> =
 import { marked } from "marked";
 import fm from "front-matter";
 import { isMalayalam } from "~/utils/language";
-import { getDbArticles } from "~/utils/db.server";
+import { getDbArticles, getDbAuthors } from "~/utils/db.server";
 
 export const loader = async ({ params, context }: LoaderFunctionArgs) => {
   const { slug } = params;
@@ -67,18 +67,18 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
     if (counterpart) counterpartSlug = counterpart.slug;
   }
 
-
   let authorDetails = null;
   try {
-    const authorsGlob = import.meta.glob("../content/settings/authors.json", { import: 'default', eager: true });
-    const authorsData = Object.values(authorsGlob)[0] as any;
-    const authorList = authorsData?.authors || [];
+    const dbAuthorsData = await getDbAuthors(env?.DB);
+    const authorList = dbAuthorsData?.authors || [];
     authorDetails = authorList.find((a: any) => 
       a.id === article.author || 
       a.name?.toLowerCase() === article.author?.toLowerCase() || 
       a.nameMl === article.author
     ) || null;
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Error fetching author details:", e);
+  }
 
   return json({
     article: { ...article, htmlBody },
@@ -250,14 +250,25 @@ export default function ArticlePage() {
             
             <div className="flex flex-wrap items-center gap-6 text-[#4A5D54] text-sm md:text-base font-inter">
               {(authorDetails || article.author) && (
-                <div className="flex items-center gap-2.5">
-                  {authorDetails?.avatar && (
-                    <img src={authorDetails.avatar} alt={authorDetails.name} className="w-7 h-7 rounded-full object-cover border border-[#15664a]/30" />
-                  )}
-                  <span className="font-semibold text-[#15664a] font-malayalam">
-                    {authorDetails?.nameMl || authorDetails?.name || article.author}
-                  </span>
-                </div>
+                authorDetails?.id ? (
+                  <Link to={`/authors/${authorDetails.id}`} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+                    {authorDetails?.avatar && (
+                      <img src={authorDetails.avatar} alt={authorDetails.name} className="w-7 h-7 rounded-full object-cover border border-[#15664a]/30" />
+                    )}
+                    <span className="font-semibold text-[#15664a] font-malayalam hover:underline">
+                      {authorDetails?.nameMl || authorDetails?.name || article.author}
+                    </span>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    {authorDetails?.avatar && (
+                      <img src={authorDetails.avatar} alt={authorDetails.name} className="w-7 h-7 rounded-full object-cover border border-[#15664a]/30" />
+                    )}
+                    <span className="font-semibold text-[#15664a] font-malayalam">
+                      {authorDetails?.nameMl || authorDetails?.name || article.author}
+                    </span>
+                  </div>
+                )
               )}
               {article.publishedAt && (
                 <span className="flex items-center gap-2 font-medium tracking-wide">
@@ -335,8 +346,13 @@ export default function ArticlePage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="text-xs font-bold uppercase tracking-wider text-[#c8a136]">Written By</span>
+                    {authorDetails.id && (
+                      <Link to={`/authors/${authorDetails.id}`} className="text-xs font-bold text-[#15664a] hover:underline">
+                        View Profile →
+                      </Link>
+                    )}
                   </div>
                   <h4 className="text-xl font-bold text-[#15664a] font-malayalam">
                     {authorDetails.nameMl || authorDetails.name}

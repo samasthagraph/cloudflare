@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { marked } from "marked";
 import fm from "front-matter";
 import { isEnglish } from "~/utils/language";
+import { getDbArticles, getDbAuthors } from "~/utils/db.server";
 import ArticlePage, { meta as originalMeta } from "./articles.$slug";
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ params, context }: LoaderFunctionArgs) => {
   const { slug } = params;
+  const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
   
+  const dbArticles = await getDbArticles(env?.DB);
   const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
   
-  const allArticles = Object.entries(mdxFiles).map(([path, content]) => {
+  const staticArticles = Object.entries(mdxFiles).map(([path, content]) => {
     const fileSlug = path.split('/').pop()?.replace('.mdx', '');
     const { attributes, body } = fm(content as string);
     return {
@@ -18,8 +20,13 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
       ...(attributes as any),
       body
     };
-  }).filter((a: any) => a.status !== 'draft');
+  });
 
+  const map = new Map<string, any>();
+  staticArticles.forEach(a => { if (a.slug) map.set(a.slug, a); });
+  dbArticles.forEach(a => { if (a.slug) map.set(a.slug, a); });
+
+  const allArticles = Array.from(map.values()).filter((a: any) => a.status !== 'draft');
   const articlesData = allArticles.filter((a: any) => isEnglish(a));
 
   const article = articlesData.find(a => a.slug === slug);
@@ -41,15 +48,16 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
   let authorDetails = null;
   try {
-    const authorsGlob = import.meta.glob("../content/settings/authors.json", { import: 'default', eager: true });
-    const authorsData = Object.values(authorsGlob)[0] as any;
-    const authorList = authorsData?.authors || [];
+    const dbAuthorsData = await getDbAuthors(env?.DB);
+    const authorList = dbAuthorsData?.authors || [];
     authorDetails = authorList.find((a: any) => 
       a.id === article.author || 
       a.name?.toLowerCase() === article.author?.toLowerCase() || 
       a.nameMl === article.author
     ) || null;
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Error fetching author details:", e);
+  }
 
   return json({
     article: { ...article, htmlBody },

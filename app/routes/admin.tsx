@@ -20,8 +20,8 @@ import { Menu, X, Edit, Trash2, Eye, Plus, Send, Bold, Italic, List, ListOrdered
 import { getSessionStorage } from "../sessions.server";
 import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId } from "../utils/youtube";
 import {
-  getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting,
-  saveDbArticle, saveDbVideo, saveDbPodcast, saveDbProgram, saveDbSetting,
+  getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting, getDbAuthors,
+  saveDbArticle, saveDbVideo, saveDbPodcast, saveDbProgram, saveDbSetting, saveDbAuthors,
   deleteDbArticle, deleteDbVideo, deleteDbPodcast, deleteDbProgram
 } from "../utils/db.server";
 
@@ -638,9 +638,9 @@ export const action = async ({ request, context }: any) => {
 
       if (env?.DB) {
         try {
-          await saveDbSetting(env.DB, "authors", parsedData);
+          await saveDbAuthors(env.DB, parsedData.authors || []);
         } catch (dbErr) {
-          console.error("D1 saveDbSetting authors error:", dbErr);
+          console.error("D1 saveDbAuthors error:", dbErr);
         }
       }
 

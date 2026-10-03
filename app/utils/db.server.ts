@@ -73,6 +73,19 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
         value TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS authors (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        name_ml TEXT,
+        role TEXT,
+        avatar TEXT,
+        bio TEXT,
+        twitter TEXT,
+        website TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
   } catch (e) {
     console.warn("Table verification / creation warning:", e);
@@ -497,3 +510,93 @@ export async function saveDbSetting(db: D1Database, key: string, value: any): Pr
     throw err;
   }
 }
+
+// ---------------- AUTHORS & SCHOLARS ---------------- //
+
+export async function getDbAuthors(db?: D1Database): Promise<{ authors: any[] }> {
+  // 1. First check site_settings in D1
+  if (db) {
+    try {
+      const dbAuthors = await getDbSetting(db, "authors");
+      if (dbAuthors && Array.isArray(dbAuthors.authors) && dbAuthors.authors.length > 0) {
+        return dbAuthors;
+      }
+    } catch (e) {
+      console.warn("D1 getDbAuthors site_settings warning:", e);
+    }
+
+    // 2. Next check authors table in D1
+    try {
+      await ensureTablesExist(db);
+      const { results } = await db.prepare("SELECT * FROM authors ORDER BY name ASC").all();
+      if (results && results.length > 0) {
+        const mapped = results.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          nameMl: row.name_ml,
+          role: row.role,
+          avatar: row.avatar,
+          bio: row.bio,
+          twitter: row.twitter,
+          website: row.website
+        }));
+        return { authors: mapped };
+      }
+    } catch (e) {
+      console.warn("D1 getDbAuthors table warning:", e);
+    }
+  }
+
+  // 3. Fallback to static authors.json
+  try {
+    const authorsGlob = import.meta.glob("../content/settings/authors.json", { import: 'default', eager: true });
+    const authorsData = Object.values(authorsGlob)[0] as any;
+    if (authorsData?.authors) {
+      return authorsData;
+    }
+  } catch (e) {
+    console.warn("Fallback authors.json error:", e);
+  }
+
+  return { authors: [] };
+}
+
+export async function saveDbAuthors(db: D1Database, authors: any[]): Promise<boolean> {
+  try {
+    await ensureTablesExist(db);
+    // Save to site_settings for JSON compatibility
+    await saveDbSetting(db, "authors", { authors });
+
+    // Sync to authors table
+    for (const a of authors) {
+      if (!a.id) continue;
+      await db.prepare(`
+        INSERT INTO authors (id, name, name_ml, role, avatar, bio, twitter, website, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          name_ml = excluded.name_ml,
+          role = excluded.role,
+          avatar = excluded.avatar,
+          bio = excluded.bio,
+          twitter = excluded.twitter,
+          website = excluded.website,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        a.id,
+        a.name || a.nameMl || 'Author',
+        a.nameMl || '',
+        a.role || '',
+        a.avatar || '',
+        a.bio || '',
+        a.twitter || '',
+        a.website || ''
+      ).run();
+    }
+    return true;
+  } catch (err) {
+    console.error("Error saving authors to D1:", err);
+    throw err;
+  }
+}
+
