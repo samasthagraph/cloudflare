@@ -51,9 +51,9 @@ export function CompactHero({
           onClick={onPrev}
           type="button"
           aria-label="Previous Slide"
-          className="absolute left-2 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 text-[#c8a136] hover:text-white bg-black/20 hover:bg-black/40 border border-[#c8a136]/30 hover:border-[#c8a136] rounded-full transition-all duration-300 backdrop-blur-sm group hover:scale-110 active:scale-95 shadow-xl"
+          className="absolute left-1.5 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 z-30 p-1.5 sm:p-3 text-[#c8a136] hover:text-white bg-black/30 hover:bg-black/50 border border-[#c8a136]/30 hover:border-[#c8a136] rounded-full transition-all duration-300 backdrop-blur-sm group hover:scale-110 active:scale-95 shadow-xl"
         >
-          <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 stroke-[2.5] transition-transform group-hover:-translate-x-0.5" />
+          <ChevronLeft className="w-5 h-5 sm:w-8 sm:h-8 stroke-[2.5] transition-transform group-hover:-translate-x-0.5" />
         </button>
       )}
 
@@ -63,19 +63,19 @@ export function CompactHero({
           onClick={onNext}
           type="button"
           aria-label="Next Slide"
-          className="absolute right-2 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 text-[#c8a136] hover:text-white bg-black/20 hover:bg-black/40 border border-[#c8a136]/30 hover:border-[#c8a136] rounded-full transition-all duration-300 backdrop-blur-sm group hover:scale-110 active:scale-95 shadow-xl"
+          className="absolute right-1.5 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-30 p-1.5 sm:p-3 text-[#c8a136] hover:text-white bg-black/30 hover:bg-black/50 border border-[#c8a136]/30 hover:border-[#c8a136] rounded-full transition-all duration-300 backdrop-blur-sm group hover:scale-110 active:scale-95 shadow-xl"
         >
-          <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 stroke-[2.5] transition-transform group-hover:translate-x-0.5" />
+          <ChevronRight className="w-5 h-5 sm:w-8 sm:h-8 stroke-[2.5] transition-transform group-hover:translate-x-0.5" />
         </button>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 relative z-10">
-        <div className={`grid grid-cols-1 ${sideContent ? 'lg:grid-cols-2' : ''} gap-10 lg:gap-12 items-center ${align === 'center' ? 'text-center' : 'text-left'}`}>
+      <div className={`max-w-7xl mx-auto ${showNav ? 'px-10 sm:px-14 lg:px-16' : 'px-4 sm:px-6 lg:px-8'} relative z-10`}>
+        <div className={`grid grid-cols-1 ${sideContent ? 'lg:grid-cols-2' : ''} gap-8 lg:gap-12 items-center ${align === 'center' ? 'text-center' : 'text-left'}`}>
           
-          <div className={`space-y-5 sm:space-y-6 ${align === 'center' ? 'mx-auto flex flex-col items-center' : ''}`}>
+          <div className={`space-y-4 sm:space-y-6 ${align === 'center' ? 'mx-auto flex flex-col items-center' : ''}`}>
             {eyebrow && (
               <div>
-                <div className="inline-flex items-center gap-2 bg-brand-gold/20 border border-brand-gold text-brand-gold px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold tracking-wide backdrop-blur-sm shadow-sm">
+                <div className="inline-flex items-center gap-2 bg-brand-gold/20 border border-brand-gold text-brand-gold px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold tracking-wide backdrop-blur-sm shadow-sm">
                   {eyebrow}
                 </div>
               </div>
@@ -83,18 +83,18 @@ export function CompactHero({
 
             {children}
 
-            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-white transition-all duration-300">
+            <h1 className="font-heading text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-white transition-all duration-300 break-words">
               {title}
             </h1>
 
             {subtitle && (
-              <p className="font-sans text-lg sm:text-xl text-brand-surface font-medium opacity-90 leading-snug transition-all duration-300">
+              <p className="font-sans text-sm sm:text-lg md:text-xl text-brand-surface font-medium opacity-90 leading-snug transition-all duration-300 break-words">
                 {subtitle}
               </p>
             )}
 
             {description && (
-              <p className="text-sm sm:text-base md:text-lg text-brand-light/80 max-w-xl leading-relaxed transition-all duration-300">
+              <p className="text-xs sm:text-base md:text-lg text-brand-light/80 max-w-xl leading-relaxed transition-all duration-300 break-words">
                 {description}
               </p>
             )}

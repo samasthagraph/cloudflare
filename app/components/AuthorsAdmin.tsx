@@ -196,9 +196,9 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
 
       {/* Add / Edit Author Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-fade-in-up">
-            <div className="px-6 py-4 bg-gradient-to-r from-emerald-950 to-[#15664a] text-white flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-fade-in-up max-h-[90vh] flex flex-col my-auto">
+            <div className="px-6 py-4 bg-gradient-to-r from-emerald-950 to-[#15664a] text-white flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <User size={20} className="text-[#c8a136]" />
                 <h3 className="font-bold text-lg">
@@ -214,7 +214,7 @@ export function AuthorsAdmin({ authorsSettings }: AuthorsAdminProps) {
               </button>
             </div>
 
-            <form onSubmit={saveAuthor} className="p-6 space-y-4">
+            <form onSubmit={saveAuthor} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">

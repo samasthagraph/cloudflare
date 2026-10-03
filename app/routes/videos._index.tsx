@@ -456,20 +456,20 @@ export default function Videos() {
                 allowFullScreen
               ></iframe>
             </div>
-            <div className="p-4 bg-gray-900 border-t border-gray-800 flex justify-between items-center">
-              <h3 className="text-white font-bold line-clamp-1 text-base">{activeVideoPopup.title}</h3>
-              <div className="flex items-center gap-3">
+            <div className="p-4 bg-gray-900 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h3 className="text-white font-bold line-clamp-1 text-sm sm:text-base">{activeVideoPopup.title}</h3>
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-end">
                 <a
                   href={`https://www.youtube.com/watch?v=${activeVideoPopup.youtubeId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-white/10 text-white rounded font-semibold text-sm hover:bg-white/20 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+                  className="px-3.5 py-2 bg-white/10 text-white rounded font-semibold text-xs sm:text-sm hover:bg-white/20 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
                 >
                   <ExternalLink size={14} /> YouTube
                 </a>
                 <Link
                   to={`/videos/${activeVideoPopup.slug}`}
-                  className="px-4 py-2 bg-[#c8a136] text-white rounded font-bold text-sm hover:bg-yellow-600 transition-colors whitespace-nowrap"
+                  className="px-4 py-2 bg-[#c8a136] text-white rounded font-bold text-xs sm:text-sm hover:bg-yellow-600 transition-colors whitespace-nowrap"
                   onClick={() => setActiveVideoPopup(null)}
                 >
                   View Details

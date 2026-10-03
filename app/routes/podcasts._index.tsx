@@ -941,28 +941,48 @@ export default function Podcasts() {
 
       {/* Floating Interactive Audio Player Dock */}
       {currentPlayingEpisode && (
-        <div className="fixed bottom-0 inset-x-0 z-50 bg-[#0a1f15]/95 backdrop-blur-md text-white border-t border-[#1e3f30] px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom duration-300">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-            {/* Episode Info */}
-            <div className="flex items-center gap-3 w-full md:w-1/3 min-w-0">
-              <img
-                src={getShowImage(currentPlayingEpisode)}
-                alt={currentPlayingEpisode.title}
-                className="w-12 h-12 rounded-xl object-cover border border-[#2D5A46] flex-shrink-0"
-              />
-              <div className="min-w-0 flex-grow">
-                <div className="text-[10px] uppercase font-bold text-[#c8a136] tracking-wider truncate">
-                  {currentPlayingEpisode.showSubtitle || currentPlayingEpisode.showTitle || 'Playing Podcast'}
+        <div className="fixed bottom-0 inset-x-0 z-50 bg-[#0a1f15]/95 backdrop-blur-md text-white border-t border-[#1e3f30] px-4 py-2.5 sm:py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom duration-300">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 sm:gap-3">
+            {/* Top row on mobile: Episode Info + Quick Action Buttons */}
+            <div className="flex items-center justify-between gap-3 w-full md:w-1/3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-grow">
+                <img
+                  src={getShowImage(currentPlayingEpisode)}
+                  alt={currentPlayingEpisode.title}
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover border border-[#2D5A46] flex-shrink-0"
+                />
+                <div className="min-w-0 flex-grow">
+                  <div className="text-[10px] uppercase font-bold text-[#c8a136] tracking-wider truncate">
+                    {currentPlayingEpisode.showSubtitle || currentPlayingEpisode.showTitle || 'Playing Podcast'}
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white truncate">
+                    {currentPlayingEpisode.title}
+                  </h4>
                 </div>
-                <h4 className="text-sm font-bold text-white truncate">
-                  {currentPlayingEpisode.title}
-                </h4>
+              </div>
+
+              {/* Mobile quick controls */}
+              <div className="flex items-center gap-2 md:hidden flex-shrink-0">
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-9 h-9 rounded-full bg-[#c8a136] text-[#0a1f15] flex items-center justify-center hover:bg-white transition-colors shadow-md"
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? <Pause size={16} className="fill-current" /> : <Play size={16} className="fill-current ml-0.5" />}
+                </button>
+                <button
+                  onClick={() => { setIsPlaying(false); setCurrentPlayingEpisode(null); }}
+                  className="text-[#7ea99a] hover:text-white p-1 rounded-full hover:bg-white/10"
+                  title="Close player"
+                >
+                  <X size={18} />
+                </button>
               </div>
             </div>
 
             {/* Central Controls & Progress */}
             <div className="flex flex-col items-center w-full md:w-1/2 gap-1">
-              <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-4">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className="w-10 h-10 rounded-full bg-[#c8a136] text-[#0a1f15] flex items-center justify-center hover:bg-white transition-colors shadow-md"
@@ -972,8 +992,8 @@ export default function Podcasts() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 w-full">
-                <span className="text-[11px] font-mono text-[#c8a136] w-10 text-right">{formatTime(currentTime)}</span>
+              <div className="flex items-center gap-2 sm:gap-3 w-full">
+                <span className="text-[10px] sm:text-[11px] font-mono text-[#c8a136] w-9 sm:w-10 text-right">{formatTime(currentTime)}</span>
                 <div className="relative flex-grow flex items-center h-4">
                   <div className="absolute inset-x-0 h-1 bg-[#1e3f30] rounded-full"></div>
                   <div className="absolute left-0 h-1 bg-[#c8a136] rounded-full" style={{ width: `${progress}%` }}></div>
@@ -987,12 +1007,12 @@ export default function Podcasts() {
                     aria-label="Seek audio"
                   />
                 </div>
-                <span className="text-[11px] font-mono text-[#7ea99a] w-10">{formatTime(duration)}</span>
+                <span className="text-[10px] sm:text-[11px] font-mono text-[#7ea99a] w-9 sm:w-10">{formatTime(duration)}</span>
               </div>
             </div>
 
-            {/* Actions & Close */}
-            <div className="flex items-center justify-end gap-3 w-full md:w-1/4">
+            {/* Desktop Actions & Close */}
+            <div className="hidden md:flex items-center justify-end gap-3 w-full md:w-1/4">
               <Link
                 to={currentPlayingEpisode.slug}
                 className="text-xs text-[#c1d5cd] hover:text-[#c8a136] flex items-center gap-1 font-semibold uppercase tracking-wider"
