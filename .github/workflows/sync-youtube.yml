@@ -1,0 +1,55 @@
+name: YouTube Discovery Sync
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+  repository_dispatch:
+    types:
+      - sync-youtube
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/content/programs/**'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      # SAFETY GATE: Set to 'true' to enable production commits and pushes.
+      # Currently explicitly disabled for Phase 3B implementation and review.
+      ENABLE_SYNC_COMMIT: 'false'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Discover YouTube Videos
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: node scripts/sync-youtube.mjs
+
+      - name: Commit and Push New Drafts
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'repository_dispatch'
+        run: |
+          git add "app/content/videos/"*.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(content): persist discovered YouTube videos"
+            git push
+          else
+            echo "No newly generated YouTube video files to persist."
+          fi

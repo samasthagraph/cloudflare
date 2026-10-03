@@ -1,0 +1,98 @@
+{
+  "hero": {
+    "eyebrow": "About Samastha Graph",
+    "statement": "The collective voice of Samastha",
+    "introText": "Samastha Graph is the official digital broadcasting network.",
+    "image": "/images/cms/about/hero.webp"
+  },
+  "enHero": {
+    "eyebrow": "About Samastha Graph",
+    "statement": "The collective voice of Samastha",
+    "introText": "Samastha Graph is the official digital broadcasting network.",
+    "image": "/images/cms/about/hero.webp"
+  },
+  "story": {
+    "text": "Samastha Kerala Jam'iyyathul Ulama, established in 1926, is the principal Sunni-Shafi'i scholarly body in Kerala. For nearly a century, it has guided the community in matters of faith, education, and social welfare.\n\nSamastha Graph was launched as the official digital media initiative to bring this legacy into the modern era. Our goal is to ensure that authentic Islamic teachings, organizational news, and educational content are accessible to the global Malayali diaspora.",
+    "image": "/images/cms/about/story.webp"
+  },
+  "enStory": {
+    "text": "Samastha Kerala Jam'iyyathul Ulama, established in 1926, is the principal Sunni-Shafi'i scholarly body in Kerala. For nearly a century, it has guided the community in matters of faith, education, and social welfare.\n\nSamastha Graph was launched as the official digital media initiative to bring this legacy into the modern era. Our goal is to ensure that authentic Islamic teachings, organizational news, and educational content are accessible to the global Malayali diaspora.",
+    "image": "/images/cms/about/story.webp"
+  },
+  "mission": [
+    {
+      "title": "Preserve Heritage",
+      "description": "Safeguarding our rich history and traditions for future generations.",
+      "icon": "BookOpen"
+    },
+    {
+      "title": "Foster Education",
+      "description": "Providing high-quality, accessible learning resources.",
+      "icon": "GraduationCap"
+    },
+    {
+      "title": "Build Community",
+      "description": "Connecting individuals through shared values and knowledge.",
+      "icon": "Users"
+    }
+  ],
+  "enMission": [
+    {
+      "title": "Preserve Heritage",
+      "description": "Safeguarding our rich history and traditions for future generations.",
+      "icon": "BookOpen"
+    },
+    {
+      "title": "Foster Education",
+      "description": "Providing high-quality, accessible learning resources.",
+      "icon": "GraduationCap"
+    },
+    {
+      "title": "Build Community",
+      "description": "Connecting individuals through shared values and knowledge.",
+      "icon": "Users"
+    }
+  ],
+  "gallery": {
+    "large": "/images/cms/about/gallery-large.webp",
+    "portrait": "/images/cms/about/gallery-portrait.webp",
+    "square": "/images/cms/about/gallery-square.webp",
+    "secondary": "/images/cms/about/gallery-secondary.webp"
+  },
+  "work": [
+    {
+      "title": "Digital Publications",
+      "description": "In-depth articles and research papers on contemporary issues."
+    },
+    {
+      "title": "Multimedia Production",
+      "description": "High-quality documentaries, short films, and educational videos."
+    },
+    {
+      "title": "Community Outreach",
+      "description": "Organizing events, seminars, and workshops across the state."
+    }
+  ],
+  "enWork": [
+    {
+      "title": "Digital Publications",
+      "description": "In-depth articles and research papers on contemporary issues."
+    },
+    {
+      "title": "Multimedia Production",
+      "description": "High-quality documentaries, short films, and educational videos."
+    },
+    {
+      "title": "Community Outreach",
+      "description": "Organizing events, seminars, and workshops across the state."
+    }
+  ],
+  "cta": {
+    "title": "Join Our Mission",
+    "description": "Become a part of the Samastha Graph community. Explore our latest articles or reach out to collaborate with us."
+  },
+  "enCta": {
+    "title": "Join Our Mission",
+    "description": "Become a part of the Samastha Graph community. Explore our latest articles or reach out to collaborate with us."
+  }
+}

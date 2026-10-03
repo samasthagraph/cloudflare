@@ -1,0 +1,44 @@
+{
+  "platforms": [
+    {
+      "id": "1787322687774",
+      "name": "Apple",
+      "url": "https://podcasts.apple.com/in/podcast/samastha-graph/id6800692488",
+      "icon": "Apple",
+      "active": true,
+      "order": 1
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "url": "https://open.spotify.com/show/0345OOoAsVlaDMFv1InStY",
+      "icon": "Spotify",
+      "active": true,
+      "order": 2
+    },
+    {
+      "id": "1787322741636",
+      "name": "Jio Saavn",
+      "url": "https://www.jiosaavn.com/shows/samastha-graph/1/D7psVgNfNcA_",
+      "icon": "Jio Saavn",
+      "active": true,
+      "order": 3
+    },
+    {
+      "id": "1787322822094",
+      "name": "Amazon Music",
+      "url": "https://music.amazon.in/podcasts/09e9891e-7e0c-429a-aab3-64f4b7f6ae11/samastha-graph",
+      "icon": "Amazon Music",
+      "active": true,
+      "order": 4
+    },
+    {
+      "id": "1787322786029",
+      "name": "YouTube Music",
+      "url": "https://music.youtube.com/@SamasthaGraph",
+      "icon": "YouTube Music",
+      "active": true,
+      "order": 5
+    }
+  ]
+}

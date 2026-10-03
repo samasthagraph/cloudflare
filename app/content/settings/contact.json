@@ -1,0 +1,48 @@
+{
+  "hero": {
+    "eyebrow": "Contact Us",
+    "supportTag": "24/7 Support",
+    "headline": "Get in Touch",
+    "description": "We're here to help and answer any question you might have.",
+    "image": "/images/cms/contact/hero.webp"
+  },
+  "enHero": {
+    "eyebrow": "Contact Us",
+    "supportTag": "24/7 Support",
+    "headline": "Get in Touch",
+    "description": "We're here to help and answer any question you might have.",
+    "image": "/images/cms/contact/hero.webp"
+  },
+  "details": {
+    "title": "Contact Details",
+    "description": "Reach out to us through any of these channels.",
+    "addressLabel": "Head Office",
+    "email": "info@samasthagraph.com",
+    "addressText": "Samastha Kerala Jam'iyyathul Ulama\nChelari, Malappuram\nKerala, India"
+  },
+  "enDetails": {
+    "title": "Contact Details",
+    "description": "Reach out to us through any of these channels.",
+    "addressLabel": "Head Office",
+    "email": "info@samasthagraph.com",
+    "addressText": "Samastha Kerala Jam'iyyathul Ulama\nChelari, Malappuram\nKerala, India"
+  },
+  "location": {
+    "title": "Visit Our Office",
+    "description": "Experience the center of our digital broadcasting network.",
+    "image": "/images/cms/contact/location.webp"
+  },
+  "enLocation": {
+    "title": "Visit Our Office",
+    "description": "Experience the center of our digital broadcasting network.",
+    "image": "/images/cms/contact/location.webp"
+  },
+  "communicationNote": {
+    "heading": "Every message matters.",
+    "description": "Whether you have a question, suggestion, collaboration proposal, or feedback, we value your communication with Samastha Graph."
+  },
+  "enCommunicationNote": {
+    "heading": "Every message matters.",
+    "description": "Whether you have a question, suggestion, collaboration proposal, or feedback, we value your communication with Samastha Graph."
+  }
+}

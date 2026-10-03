@@ -1,0 +1,11 @@
+name = "samasthagraph"
+pages_build_output_dir = "build/client"
+compatibility_date = "2024-03-01"
+
+[vars]
+ADMIN_USERNAME = "samastha_admin"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "graph_website"
+database_id = "f51da92f-e32b-4338-a0b1-19b2bb4e2533"

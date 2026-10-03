@@ -1,0 +1,44 @@
+{
+  "platforms": [
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "url": "https://www.youtube.com/@SamasthaGraph",
+      "icon": "Youtube",
+      "active": true,
+      "order": 1
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "url": "https://facebook.com/SamasthaGraph",
+      "icon": "Facebook",
+      "active": true,
+      "order": 2
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram",
+      "url": "https://instagram.com/samasthagraph",
+      "icon": "Instagram",
+      "active": true,
+      "order": 3
+    },
+    {
+      "id": "1787322879555",
+      "name": "X",
+      "url": "https://www.x.com/SamasthaGraph",
+      "icon": "X",
+      "active": true,
+      "order": 4
+    },
+    {
+      "id": "1787322902325",
+      "name": "WhatsApp Channel",
+      "url": "https://whatsapp.com/channel/0029Vb9kOJ7IiRp0Kotu2y3W",
+      "icon": "WhatsApp ",
+      "active": true,
+      "order": 5
+    }
+  ]
+}

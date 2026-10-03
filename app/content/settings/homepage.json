@@ -1,0 +1,12 @@
+{
+  "hero": {
+    "enabled": true,
+    "type": "video",
+    "slug": "minal-qalb-episode-01",
+    "layout": "cinematic",
+    "eyebrow": "FEATURED VIDEO",
+    "displayTitle": "",
+    "displayDescription": "",
+    "ctaText": "Watch Now"
+  }
+}

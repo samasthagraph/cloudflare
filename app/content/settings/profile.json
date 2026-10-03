@@ -1,0 +1,35 @@
+{
+  "identity": {
+    "name": "Samastha Graph",
+    "subtitle": "The Visual Universe of Knowledge",
+    "biography": "Samastha Graph is the official digital broadcasting network representing the collective voice of Samastha and its organizational wings.",
+    "logo": "/images/profile-logo.webp"
+  },
+  "enIdentity": {
+    "name": "Samastha Graph",
+    "subtitle": "The visual universe of knowledge journey",
+    "biography": "Samastha Graph is the official digital broadcasting network representing the collective voice of Samastha and its organizational wings.",
+    "logo": "/images/profile-logo.webp"
+  },
+  "featuredCTA": {
+    "title": "Visit Website",
+    "url": "https://samasthagraph.com",
+    "active": true
+  },
+  "links": [
+    {
+      "id": "1",
+      "title": "Latest Article",
+      "description": "Read our newest publication on Islamic history",
+      "url": "/articles",
+      "icon": "FileText",
+      "active": true,
+      "order": 1
+    }
+  ],
+  "featuredContent": {
+    "showLatestVideo": true,
+    "showLatestPodcast": true,
+    "showLatestArticle": true
+  }
+}

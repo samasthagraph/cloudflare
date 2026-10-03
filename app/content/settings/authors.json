@@ -1,0 +1,28 @@
+{
+  "authors": [
+    {
+      "id": "samastha-editorial",
+      "name": "Samastha Graph Editorial",
+      "nameMl": "സമസ്ത ഗ്രാഫ് എഡിറ്റോറിയൽ",
+      "role": "Editorial Board",
+      "avatar": "/Logo.png",
+      "bio": "Official editorial team of Samastha Graph."
+    },
+    {
+      "id": "dr-abdul-hakeem-azhari",
+      "name": "Dr. Abdul Hakeem Azhari",
+      "nameMl": "ഡോ. അബ്ദുൽ ഹകീം അസ്ഹരി",
+      "role": "Islamic Scholar & Researcher",
+      "avatar": "",
+      "bio": "Prominent Islamic scholar and educator."
+    },
+    {
+      "id": "moulana-rumi",
+      "name": "Moulana Jalaluddin Rumi",
+      "nameMl": "മൗലാനാ ജലാലുദ്ദീൻ റൂമി",
+      "role": "Classical Islamic Scholar & Mystic",
+      "avatar": "",
+      "bio": "13th-century Islamic scholar, theologian, and Persian poet."
+    }
+  ]
+}

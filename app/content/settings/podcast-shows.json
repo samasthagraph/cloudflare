@@ -1,0 +1,64 @@
+{
+  "shows": [
+    {
+      "id": "samastha-graph",
+      "title": "Samastha Graph",
+      "subtitle": "Samastha Graph Podcast",
+      "feedUrl": "https://anchor.fm/s/115f86d24/podcast/rss",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46535697/46535697-1786530965061-a1e35ade3abba.jpg",
+      "description": "The official podcast series of Samastha Graph exploring history, missions, and scholarly intellectual discourses.",
+      "active": true,
+      "order": 1
+    },
+    {
+      "id": "minal-qalb",
+      "title": "Minal Qalb",
+      "subtitle": "From the Heart",
+      "feedUrl": "https://anchor.fm/s/116cf0fa0/podcast/rss",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46676360/46676360-1788422894332-c2d51c3f4d7f6.jpg",
+      "description": "A spiritual podcast series featuring heart-touching reflections and deep conversations.",
+      "active": true,
+      "order": 2
+    },
+    {
+      "id": "fiqh-files",
+      "title": "Fiqh Files",
+      "subtitle": "Fiqh Files",
+      "feedUrl": "https://anchor.fm/s/117e2a474/podcast/rss",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46856965/46856965-1790676679082-7db351112fd31.jpg",
+      "description": "An educational series explaining Islamic jurisprudence rulings, clarifications, and contemporary issues.",
+      "active": true,
+      "order": 3
+    },
+    {
+      "id": "ananthaporul",
+      "title": "Ananthaporul",
+      "subtitle": "Ananthaporul - Anas Amani Pushpagiri",
+      "feedUrl": "https://anchor.fm/s/11773b7f8/podcast/rss",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46784270/46784270-1789794250435-1377b2f621128.jpg",
+      "description": "Inspirational discourses on life success, peace of mind, and family life led by Anas Amani Pushpagiri.",
+      "active": true,
+      "order": 4
+    },
+    {
+      "id": "noorul-hira",
+      "title": "Noorul Hira",
+      "subtitle": "Surah Al-Baqarah Reflections",
+      "feedUrl": "https://anchor.fm/s/11752d344/podcast/rss",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46762713/46762713-1789541395807-032fb91d22cf2.jpg",
+      "description": "An in-depth explanation and commentary series on the Holy Quran's Surah Al-Baqarah.",
+      "active": true,
+      "order": 5
+    },
+    {
+      "id": "ihya-uloomudheen",
+      "title": "Ihya Uloomudheen",
+      "subtitle": "Paths of the Heart",
+      "feedUrl": "https://anchor.fm/s/117f7ef3c/podcast/rss",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46870919/46870919-1790837528597-b7dc507bc64a4.jpg",
+      "description": "Timeless wisdom and spiritual purification reflections from Imam Al-Ghazali's Ihya Uloomuddeen.",
+      "active": true,
+      "order": 6
+    }
+  ]
+}
