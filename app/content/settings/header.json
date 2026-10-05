@@ -1,0 +1,44 @@
+{
+  "brandName": "Samastha Graph",
+  "logo": "/Logo_white.png",
+  "navLinks": [
+    {
+      "id": "1",
+      "label": "Home",
+      "labelMl": "പ്രധാനം",
+      "url": "/"
+    },
+    {
+      "id": "2",
+      "label": "Videos",
+      "labelMl": "വീഡിയോകൾ",
+      "url": "/videos"
+    },
+    {
+      "id": "3",
+      "label": "Podcasts",
+      "labelMl": "പോഡ്‌കാസ്റ്റുകൾ",
+      "url": "/podcasts"
+    },
+    {
+      "id": "4",
+      "label": "Articles",
+      "labelMl": "ലേഖനങ്ങൾ",
+      "url": "/articles"
+    },
+    {
+      "id": "5",
+      "label": "About",
+      "labelMl": "ഞങ്ങളെക്കുറിച്ച്",
+      "url": "/about"
+    },
+    {
+      "id": "6",
+      "label": "Contact",
+      "labelMl": "ബന്ധപ്പെടുക",
+      "url": "/contact"
+    }
+  ],
+  "enableSearch": true,
+  "enableLanguageSwitcher": true
+}

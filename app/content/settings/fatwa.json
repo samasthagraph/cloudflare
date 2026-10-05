@@ -1,0 +1,27 @@
+{
+  "headline": "Ideology & Fatwa Guidance",
+  "headlineMl": "ആദർശവും ഫത്‌വകളും",
+  "subheadline": "Clear theological positions and juridical responses on contemporary challenges adhering to authentic Sunni tradition.",
+  "bannerImageUrl": "/images/cms/fatwa/banner.webp",
+  "officialStance": "Samastha upholds the orthodox Sunni-Shafi'i methodology, safeguarding spiritual traditions, sufi tariqas, and traditional Islamic sciences against deviation and modernism.",
+  "officialStanceMl": "അഹ്ലുസ്സുന്നത്തി വൽ ജമാഅത്തിന്റെ യഥാർത്ഥ ആശയാദർശങ്ങൾ സംരക്ഷിച്ചും പാരമ്പര്യ പണ്ഡിത സരണിയെ മുറുകെ പിടിച്ചും സമസ്ത സമൂഹത്തെ നയിക്കുന്നു.",
+  "externalCmsUrl": "https://fiqhfiles.samasthagraph.com",
+  "recentFatwas": [
+    {
+      "id": "1",
+      "title": "On Islamic Finance and Digital Currencies",
+      "titleMl": "ഡിജിറ്റൽ കറൻസികളും ഇസ്ലാമിക സാമ്പത്തിക വീക്ഷണവും",
+      "date": "2024-05-10",
+      "category": "Economy & Trade",
+      "summary": "Clarification on halal commercial transactions and volatile digital token trading under Shafi'i law."
+    },
+    {
+      "id": "2",
+      "title": "Sighting of the Crescent and Uniformity Guidelines",
+      "titleMl": "മാസപ്പിറവി നിർണ്ണയവും ഐക്യരൂപ മാനദണ്ഡങ്ങളും",
+      "date": "2024-03-01",
+      "category": "Worship / Ibadah",
+      "summary": "Authentic jurisprudential protocol regarding astronomical calculations versus eyewitness evidence."
+    }
+  ]
+}

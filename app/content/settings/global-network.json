@@ -1,0 +1,15 @@
+{
+  "headline": "Global Presence & Diaspora Network",
+  "headlineMl": "ആഗോള ശൃംഖല",
+  "subheadline": "Connecting millions of believers through affiliated councils and national committees worldwide.",
+  "mapImageUrl": "/images/cms/network/global-map.webp",
+  "countriesCount": "25+",
+  "nationalCouncilsCount": "12+",
+  "centersCount": "1,200+",
+  "regions": [
+    { "id": "1", "name": "GCC & Middle East", "description": "UAE, Saudi Arabia, Qatar, Oman, Kuwait, Bahrain National Committees" },
+    { "id": "2", "name": "Europe & UK", "description": "London, Dublin, Manchester, Germany cultural centers" },
+    { "id": "3", "name": "Asia Pacific", "description": "Malaysia, Singapore, Australia diaspora associations" },
+    { "id": "4", "name": "North America", "description": "United States and Canada community hubs" }
+  ]
+}

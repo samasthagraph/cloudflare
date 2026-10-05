@@ -10,7 +10,7 @@ import { OptimizedImage } from "~/components/OptimizedImage";
 export const meta: MetaFunction = ({ data, location }) => {
   const typedData = data as any;
   const title = `${typedData?.profile?.identity?.name || 'Samastha Graph'} | Profile Hub`;
-  const description = typedData?.profile?.identity?.biography || "THE ILLUMINATED COSMOS OF KNOWLEDGE.";
+  const description = typedData?.profile?.identity?.biography || "Explore the universe of knowledge.";
   const url = `https://samasthagraph.pages.dev${location.pathname}`;
   return [
     { title },

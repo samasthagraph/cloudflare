@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { json, redirect } from "@remix-run/cloudflare";
-import { AdminLayout } from "../components/AdminLayout";
 import { ProfileAdmin } from "../components/ProfileAdmin";
 import { HomepageAdmin } from "../components/HomepageAdmin";
 import { PlatformAdmin } from "../components/PlatformAdmin";
@@ -8,23 +7,36 @@ import { AboutAdmin } from "../components/AboutAdmin";
 import { ContactAdmin } from "../components/ContactAdmin";
 import { PodcastShowsAdmin } from "../components/PodcastShowsAdmin";
 import { AuthorsAdmin } from "../components/AuthorsAdmin";
+import { HeaderAdmin } from "../components/HeaderAdmin";
+import { HeroAdmin } from "../components/HeroAdmin";
+import { PillarsAdmin } from "../components/PillarsAdmin";
+import { LeadershipAdmin } from "../components/LeadershipAdmin";
+import { GlobalNetworkAdmin } from "../components/GlobalNetworkAdmin";
+import { HighlightsAdmin } from "../components/HighlightsAdmin";
+import { FatwaAdmin } from "../components/FatwaAdmin";
+import { EducationAdmin } from "../components/EducationAdmin";
+import { GetInvolvedAdmin } from "../components/GetInvolvedAdmin";
+import { MushawaraAdmin } from "../components/MushawaraAdmin";
+import { FooterAdmin } from "../components/FooterAdmin";
+import { ContactMessagesAdmin } from "../components/ContactMessagesAdmin";
 import { useActionData, Form, useNavigation, useLoaderData, useSubmit, Link, useSearchParams } from "@remix-run/react";
 import fm from "front-matter";
 import RichTextEditor from '../components/RichTextEditor';
-// removed tiptap imports
 
-
-
-
-import { Menu, X, Edit, Trash2, Eye, Plus, Send, Bold, Italic, List, ListOrdered, Link as LinkIcon, RefreshCw, Calendar as CalendarIcon, Search, LayoutDashboard, FileText, Video, Mic, BarChart2, ChevronDown, LogOut, Settings, Quote, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Heading1, Heading2, Heading3, Heading4, Strikethrough, Minus, User, Share2, ExternalLink, Radio, Rss } from 'lucide-react';
-import { getSessionStorage } from "../sessions.server";
-import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId } from "../utils/youtube";
 import {
-  getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting, getDbAuthors,
+  Menu, X, Edit, Trash2, Eye, Plus, Send, RefreshCw, Calendar as CalendarIcon, Search,
+  LayoutDashboard, FileText, Video, Mic, ChevronDown, LogOut, ExternalLink, Radio,
+  Mail, MessageSquare, Compass, Sliders, Layers, Award, Globe, Activity,
+  BookOpenCheck, GraduationCap, Users, LayoutTemplate, Sparkles, CheckCircle2, ChevronRight, User
+} from 'lucide-react';
+import { getSessionStorage } from "../sessions.server";
+import { fetchYouTubePlaylistVideos } from "../utils/youtube";
+import {
+  getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting, getDbAuthors, getDbContactMessages,
   saveDbArticle, saveDbVideo, saveDbPodcast, saveDbProgram, saveDbSetting, saveDbAuthors,
+  updateDbContactMessageStatus, deleteDbContactMessage,
   deleteDbArticle, deleteDbVideo, deleteDbPodcast, deleteDbProgram
 } from "../utils/db.server";
-
 
 function sanitizeSlug(newSlug: string, title: string): string {
   let finalSlug = newSlug || title;
@@ -40,24 +52,16 @@ function validateImageUrl(url: string | undefined | null): boolean {
   if (!url) return true;
   const trimmed = url.trim();
   if (trimmed === "") return true;
-  
-  // Accept standard http and https URLs
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    // Specifically reject ibb.co as per previous rules
     if (trimmed.includes("ibb.co")) return false;
     return true;
   }
-  
-  // Accept valid relative image paths
   if (trimmed.startsWith("/") || trimmed.startsWith("./") || trimmed.startsWith("../")) {
     return true;
   }
-  
-  // Accept simple alphanumeric filenames that frontend could prefix
   if (/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/.test(trimmed)) {
     return true;
   }
-  
   return false;
 }
 
@@ -121,13 +125,11 @@ async function checkGithubFileExists(token: string | undefined, owner: string, r
 async function handleSlugRenameSequence({
   githubToken, owner, repo, folderPath, extension, originalSlug, finalSlug, contentStr, message
 }: any) {
-
   if (originalSlug && originalSlug !== finalSlug) {
     const originalExists = await checkGithubFileExists(githubToken, owner, repo, `${folderPath}/${originalSlug}${extension}`);
     if (!originalExists && githubToken) {
       throw new Error(`Original file ${originalSlug}${extension} does not exist at expected path.`);
     }
-
     const newExists = await checkGithubFileExists(githubToken, owner, repo, `${folderPath}/${finalSlug}${extension}`);
     if (newExists) {
       throw new Error("That URL slug is already in use.");
@@ -154,7 +156,7 @@ async function handleSlugRenameSequence({
       });
       return { success: true, renameStatus: "success" };
     } catch (e) {
-      return { success: true, renameStatus: "incomplete", error: "Content was saved with the new URL, but the old URL could not be removed. Please retry the rename." };
+      return { success: true, renameStatus: "incomplete", error: "Content was saved with the new URL, but the old URL could not be removed." };
     }
   }
 
@@ -223,6 +225,7 @@ export const loader = async ({ request, context }: any) => {
   if (!session.get("adminAuthenticated")) {
     throw redirect("/admin/login");
   }
+
   let articles: any[] = [];
   let videos: any[] = [];
   let podcasts: any[] = [];
@@ -237,191 +240,82 @@ export const loader = async ({ request, context }: any) => {
   let podcastPlatformSettings = null;
   let podcastShowsSettings = null;
   let authorsSettings = null;
+  let headerSettings = null;
+  let heroSettings = null;
+  let pillarsSettings = null;
+  let leadershipSettings = null;
+  let globalNetworkSettings = null;
+  let highlightsSettings = null;
+  let fatwaSettings = null;
+  let educationSettings = null;
+  let getInvolvedSettings = null;
+  let mushawaraSettings = null;
+  let footerSettings = null;
+  let contactMessages: any[] = [];
 
-  const githubToken = env.GITHUB_TOKEN;
-  const githubOwner = env.GITHUB_OWNER || "samasthagraph";
-  const githubRepo = env.GITHUB_REPO || "cloudflare";
+  // Local Static Glob Fallback
+  const mdxArticles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+  articles = Object.entries(mdxArticles).map(([path, content]) => {
+    const fileSlug = path.split('/').pop()?.replace('.mdx', '');
+    const { attributes, body } = fm(content as string);
+    return { slug: fileSlug, ...(attributes as any), body, type: 'article' };
+  }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  if (githubToken) {
-    try {
-      const fetchFolder = async (folder: string) => {
-        const res = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/contents/app/content/${folder}?ref=main`, {
-          headers: {
-            "Authorization": `token ${githubToken}`,
-            "User-Agent": "Samastha-CMS",
-            "Accept": "application/vnd.github.v3+json"
-          }
-        });
-        if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
-        return await res.json();
-      };
+  const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
+  videos = Object.entries(jsonVideos).map(([path, content]: any) => {
+    return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'video' };
+  }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-      const fetchFileContent = async (url: string) => {
-        const res = await fetch(url, {
-          headers: {
-            "Authorization": `token ${githubToken}`,
-            "User-Agent": "Samastha-CMS",
-            "Accept": "application/vnd.github.v3+json"
-          }
-        });
-        if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
-        const data = await res.json();
-        const base64 = data.content.replace(/\n/g, '');
-        const binaryString = atob(base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        const decoder = new TextDecoder('utf-8');
-        return decoder.decode(bytes);
-      };
+  const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+  podcasts = Object.entries(jsonPodcasts).map(([path, content]: any) => {
+    return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'podcast' };
+  }).sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
 
-      const [articleFiles, videoFiles, podcastFiles, settingsFiles, programFiles] = await Promise.all([
-        fetchFolder('articles').catch(() => []),
-        fetchFolder('videos').catch(() => []),
-        fetchFolder('podcasts').catch(() => []),
-        fetchFolder('settings').catch(() => []),
-        fetchFolder('programs').catch(() => [])
-      ]);
+  const jsonPrograms = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
+  programs = Object.entries(jsonPrograms).map(([path, content]: any) => {
+    return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'program' };
+  }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-      await Promise.all([
-        ...((articleFiles as any[]) || []).filter(f => f.name.endsWith('.mdx')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          const { attributes, body } = fm(content);
-          articles.push({ slug: file.name.replace('.mdx', ''), ...(attributes as any), body, type: 'article' });
-        }),
-        ...((videoFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          videos.push({ slug: file.name.replace('.json', ''), ...JSON.parse(content), type: 'video' });
-        }),
-        ...((podcastFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          podcasts.push({ slug: file.name.replace('.json', ''), ...JSON.parse(content), type: 'podcast' });
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'podcasts.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          platformSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'profile.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          profileSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'homepage.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          homepageSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'about.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          aboutSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'contact.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          contactSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'social-platforms.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          socialPlatformSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'podcast-platforms.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          podcastPlatformSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'podcast-shows.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          podcastShowsSettings = JSON.parse(content);
-        }),
-        ...((programFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          programs.push({ slug: file.name.replace('.json', ''), ...JSON.parse(content), type: 'program' });
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'authors.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          authorsSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'spotlight.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          spotlightSettings = JSON.parse(content);
-        })
-      ]);
-
-      articles.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      videos.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      podcasts.sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-      programs.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    } catch (e) {
-      console.error("GitHub Sync failed, falling back to local files:", e);
-      articles = [];
-      videos = [];
-      podcasts = [];
-    }
+  const jsonSettings = import.meta.glob("../content/settings/*.json", { import: 'default', eager: true });
+  for (const path in jsonSettings) {
+    if (path.includes('podcasts.json')) platformSettings = jsonSettings[path];
+    if (path.includes('profile.json')) profileSettings = jsonSettings[path];
+    if (path.includes('homepage.json')) homepageSettings = jsonSettings[path];
+    if (path.includes('about.json')) aboutSettings = jsonSettings[path];
+    if (path.includes('contact.json')) contactSettings = jsonSettings[path];
+    if (path.includes('social-platforms.json')) socialPlatformSettings = jsonSettings[path];
+    if (path.includes('podcast-platforms.json')) podcastPlatformSettings = jsonSettings[path];
+    if (path.includes('podcast-shows.json')) podcastShowsSettings = jsonSettings[path];
+    if (path.includes('spotlight.json')) spotlightSettings = jsonSettings[path];
+    if (path.includes('authors.json')) authorsSettings = jsonSettings[path];
+    if (path.includes('header.json')) headerSettings = jsonSettings[path];
+    if (path.includes('hero.json')) heroSettings = jsonSettings[path];
+    if (path.includes('pillars.json')) pillarsSettings = jsonSettings[path];
+    if (path.includes('leadership.json')) leadershipSettings = jsonSettings[path];
+    if (path.includes('global-network.json')) globalNetworkSettings = jsonSettings[path];
+    if (path.includes('highlights.json')) highlightsSettings = jsonSettings[path];
+    if (path.includes('fatwa.json')) fatwaSettings = jsonSettings[path];
+    if (path.includes('education.json')) educationSettings = jsonSettings[path];
+    if (path.includes('get-involved.json')) getInvolvedSettings = jsonSettings[path];
+    if (path.includes('mushawara.json')) mushawaraSettings = jsonSettings[path];
+    if (path.includes('footer.json')) footerSettings = jsonSettings[path];
+    if (path.includes('messages.json')) contactMessages = (jsonSettings[path] as any) || [];
   }
 
-  if (articles.length === 0 && videos.length === 0 && podcasts.length === 0) {
-    const mdxArticles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-    articles = Object.entries(mdxArticles).map(([path, content]) => {
-      const fileSlug = path.split('/').pop()?.replace('.mdx', '');
-      const { attributes, body } = fm(content as string);
-      return { slug: fileSlug, ...(attributes as any), body, type: 'article' };
-    }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-    videos = Object.entries(jsonVideos).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'video' };
-    }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-    podcasts = Object.entries(jsonPodcasts).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'podcast' };
-    }).sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-
-    const jsonPrograms = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
-    programs = Object.entries(jsonPrograms).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'program' };
-    }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    const jsonSettings = import.meta.glob("../content/settings/*.json", { import: 'default', eager: true });
-    for (const path in jsonSettings) {
-      if (path.includes('podcasts.json')) {
-        platformSettings = jsonSettings[path];
-      }
-      if (path.includes('profile.json')) {
-        profileSettings = jsonSettings[path];
-      }
-      if (path.includes('homepage.json')) {
-        homepageSettings = jsonSettings[path];
-      }
-      if (path.includes('about.json')) {
-        aboutSettings = jsonSettings[path];
-      }
-      if (path.includes('contact.json')) {
-        contactSettings = jsonSettings[path];
-      }
-      if (path.includes('social-platforms.json')) {
-        socialPlatformSettings = jsonSettings[path];
-      }
-      if (path.includes('podcast-platforms.json')) {
-        podcastPlatformSettings = jsonSettings[path];
-      }
-      if (path.includes('podcast-shows.json')) {
-        podcastShowsSettings = jsonSettings[path];
-      }
-      if (path.includes('spotlight.json')) {
-        spotlightSettings = jsonSettings[path];
-      }
-      if (path.includes('authors.json')) {
-        authorsSettings = jsonSettings[path];
-      }
-    }
-  }
-
+  // D1 Database Merge
   if (env?.DB) {
     try {
-      const [dbArticles, dbVideos, dbPodcasts, dbPrograms, dbHomepage, dbAbout, dbContact, dbSocial, dbPodcastPlatforms, dbPodcastShows, dbProfile, dbAuthors, dbSpotlight] = await Promise.all([
+      const [
+        dbArticles, dbVideos, dbPodcasts, dbPrograms, dbMessages,
+        dbHomepage, dbAbout, dbContact, dbSocial, dbPodcastPlatforms, dbPodcastShows,
+        dbProfile, dbAuthors, dbSpotlight, dbHeader, dbHero, dbPillars, dbLeadership,
+        dbGlobalNetwork, dbHighlights, dbFatwa, dbEducation, dbGetInvolved, dbMushawara, dbFooter
+      ] = await Promise.all([
         getDbArticles(env.DB),
         getDbVideos(env.DB),
         getDbPodcasts(env.DB),
         getDbPrograms(env.DB),
+        getDbContactMessages(env.DB),
         getDbSetting(env.DB, "homepage"),
         getDbSetting(env.DB, "about"),
         getDbSetting(env.DB, "contact"),
@@ -429,8 +323,19 @@ export const loader = async ({ request, context }: any) => {
         getDbSetting(env.DB, "podcast-platforms"),
         getDbSetting(env.DB, "podcast-shows"),
         getDbSetting(env.DB, "profile"),
-        getDbSetting(env.DB, "authors"),
-        getDbSetting(env.DB, "spotlight")
+        getDbAuthors(env.DB),
+        getDbSetting(env.DB, "spotlight"),
+        getDbSetting(env.DB, "header"),
+        getDbSetting(env.DB, "hero"),
+        getDbSetting(env.DB, "pillars"),
+        getDbSetting(env.DB, "leadership"),
+        getDbSetting(env.DB, "global-network"),
+        getDbSetting(env.DB, "highlights"),
+        getDbSetting(env.DB, "fatwa"),
+        getDbSetting(env.DB, "education"),
+        getDbSetting(env.DB, "get-involved"),
+        getDbSetting(env.DB, "mushawara"),
+        getDbSetting(env.DB, "footer")
       ]);
 
       if (dbArticles && dbArticles.length > 0) {
@@ -457,6 +362,7 @@ export const loader = async ({ request, context }: any) => {
         dbPrograms.forEach((p: any) => map.set(p.slug, p));
         programs = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
       }
+      if (dbMessages && dbMessages.length > 0) contactMessages = dbMessages;
       if (dbHomepage) homepageSettings = dbHomepage;
       if (dbAbout) aboutSettings = dbAbout;
       if (dbContact) contactSettings = dbContact;
@@ -464,8 +370,19 @@ export const loader = async ({ request, context }: any) => {
       if (dbPodcastPlatforms) podcastPlatformSettings = dbPodcastPlatforms;
       if (dbPodcastShows) podcastShowsSettings = dbPodcastShows;
       if (dbProfile) profileSettings = dbProfile;
-      if (dbAuthors) authorsSettings = dbAuthors;
+      if (dbAuthors?.authors) authorsSettings = dbAuthors;
       if (dbSpotlight) spotlightSettings = dbSpotlight;
+      if (dbHeader) headerSettings = dbHeader;
+      if (dbHero) heroSettings = dbHero;
+      if (dbPillars) pillarsSettings = dbPillars;
+      if (dbLeadership) leadershipSettings = dbLeadership;
+      if (dbGlobalNetwork) globalNetworkSettings = dbGlobalNetwork;
+      if (dbHighlights) highlightsSettings = dbHighlights;
+      if (dbFatwa) fatwaSettings = dbFatwa;
+      if (dbEducation) educationSettings = dbEducation;
+      if (dbGetInvolved) getInvolvedSettings = dbGetInvolved;
+      if (dbMushawara) mushawaraSettings = dbMushawara;
+      if (dbFooter) footerSettings = dbFooter;
     } catch (e) {
       console.warn("D1 loader merge warning:", e);
     }
@@ -476,6 +393,7 @@ export const loader = async ({ request, context }: any) => {
     videos,
     podcasts,
     programs,
+    contactMessages,
     spotlightSettings,
     platformSettings,
     profileSettings,
@@ -485,9 +403,19 @@ export const loader = async ({ request, context }: any) => {
     socialPlatformSettings,
     podcastPlatformSettings,
     podcastShowsSettings,
-    authorsSettings: authorsSettings || { authors: [] }
+    authorsSettings: authorsSettings || { authors: [] },
+    headerSettings,
+    heroSettings,
+    pillarsSettings,
+    leadershipSettings,
+    globalNetworkSettings,
+    highlightsSettings,
+    fatwaSettings,
+    educationSettings,
+    getInvolvedSettings,
+    mushawaraSettings,
+    footerSettings
   });
-
 };
 
 export const action = async ({ request, context }: any) => {
@@ -507,9 +435,8 @@ export const action = async ({ request, context }: any) => {
     });
   }
 
-
   if (intent === "deploy") {
-    const hook = context?.cloudflare?.env?.CLOUDFLARE_DEPLOY_HOOK || context?.env?.CLOUDFLARE_DEPLOY_HOOK || process.env.CLOUDFLARE_DEPLOY_HOOK;
+    const hook = env?.CLOUDFLARE_DEPLOY_HOOK || process.env?.CLOUDFLARE_DEPLOY_HOOK;
     if (!hook) return json({ error: "Deploy hook missing" }, { status: 500 });
     await fetch(hook, { method: "POST" });
     return json({ success: true, message: "Production deployment triggered successfully!" });
@@ -520,115 +447,61 @@ export const action = async ({ request, context }: any) => {
   const repo = "cloudflare";
 
   try {
-    if (intent === "saveHomepage") {
-      const dataStr = formData.get("homepageData") as string;
+    // Generic settings saver helper
+    const handleSettingSave = async (key: string, formField: string, filename: string, titleLabel: string) => {
+      const dataStr = formData.get(formField) as string;
       const parsedData = JSON.parse(dataStr);
-      if (parsedData.hero?.image && !validateImageUrl(parsedData.hero.image)) return json({ error: "Invalid image URL in hero." }, { status: 400 });
-      if (parsedData.about?.image && !validateImageUrl(parsedData.about.image)) return json({ error: "Invalid image URL in about section." }, { status: 400 });
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "homepage", parsedData);
+        await saveDbSetting(env.DB, key, parsedData);
       }
 
       await commitToGitHub({
         token: githubToken,
         owner,
         repo,
-        path: "app/content/settings/homepage.json",
+        path: `app/content/settings/${filename}`,
         content: jsonContent,
-        message: "update homepage settings"
+        message: `update ${key} settings`
       });
-      return json({ success: true, message: "Homepage settings saved successfully!" });
+
+      return json({ success: true, intent, message: `${titleLabel} saved successfully!` });
+    };
+
+    if (intent === "saveHeader") return await handleSettingSave("header", "headerData", "header.json", "Header settings");
+    if (intent === "saveHero") return await handleSettingSave("hero", "heroData", "hero.json", "Hero settings");
+    if (intent === "savePillars") return await handleSettingSave("pillars", "pillarsData", "pillars.json", "Core Pillars");
+    if (intent === "saveLeadership") return await handleSettingSave("leadership", "leadershipData", "leadership.json", "Leadership settings");
+    if (intent === "saveGlobalNetwork") return await handleSettingSave("global-network", "globalNetworkData", "global-network.json", "Global Network settings");
+    if (intent === "saveHighlights") return await handleSettingSave("highlights", "highlightsData", "highlights.json", "Key Highlights");
+    if (intent === "saveFatwa") return await handleSettingSave("fatwa", "fatwaData", "fatwa.json", "Ideology & Fatwa settings");
+    if (intent === "saveEducation") return await handleSettingSave("education", "educationData", "education.json", "Education settings");
+    if (intent === "saveGetInvolved") return await handleSettingSave("get-involved", "getInvolvedData", "get-involved.json", "WhatsApp & Community settings");
+    if (intent === "saveMushawara") return await handleSettingSave("mushawara", "mushawaraData", "mushawara.json", "Mushawara Council members");
+    if (intent === "saveFooter") return await handleSettingSave("footer", "footerData", "footer.json", "Footer settings");
+    if (intent === "saveHomepage") return await handleSettingSave("homepage", "homepageData", "homepage.json", "Homepage settings");
+    if (intent === "saveAbout") return await handleSettingSave("about", "aboutData", "about.json", "About Us settings");
+    if (intent === "saveContact") return await handleSettingSave("contact", "contactData", "contact.json", "Contact Us settings");
+    if (intent === "saveSocialPlatforms") return await handleSettingSave("social-platforms", "socialPlatformData", "social-platforms.json", "Social Platforms");
+    if (intent === "savePodcastPlatforms") return await handleSettingSave("podcast-platforms", "podcastPlatformData", "podcast-platforms.json", "Podcast Platforms");
+    if (intent === "savePodcastShows") return await handleSettingSave("podcast-shows", "podcastShowsData", "podcast-shows.json", "Podcast Shows & RSS");
+
+    if (intent === "updateMessageStatus") {
+      const msgId = formData.get("messageId") as string;
+      const newStatus = formData.get("newStatus") as string;
+      if (env?.DB) {
+        await updateDbContactMessageStatus(env.DB, msgId, newStatus);
+      }
+      return json({ success: true, message: `Message marked as ${newStatus}!` });
     }
 
-    if (intent === "saveAbout") {
-      const dataStr = formData.get("aboutData") as string;
-      const parsedData = JSON.parse(dataStr);
-      if (parsedData.hero?.image && !validateImageUrl(parsedData.hero.image)) return json({ error: "Invalid image URL in hero section." }, { status: 400 });
-      if (parsedData.story?.image && !validateImageUrl(parsedData.story.image)) return json({ error: "Invalid image URL in story section." }, { status: 400 });
-      if (parsedData.gallery) {
-        for (const key of Object.keys(parsedData.gallery)) {
-          if (parsedData.gallery[key] && !validateImageUrl(parsedData.gallery[key])) return json({ error: `Invalid image URL in gallery (${key}).` }, { status: 400 });
-        }
-      }
-      const jsonContent = JSON.stringify(parsedData, null, 2);
-
+    if (intent === "deleteMessage") {
+      const msgId = formData.get("messageId") as string;
       if (env?.DB) {
-        await saveDbSetting(env.DB, "about", parsedData);
+        await deleteDbContactMessage(env.DB, msgId);
       }
-
-      await commitToGitHub({
-        token: githubToken,
-        owner,
-        repo,
-        path: "app/content/settings/about.json",
-        content: jsonContent,
-        message: "update about page settings"
-      });
-      return json({ success: true, message: "About Us settings saved successfully!" });
-    }
-
-    if (intent === "saveContact") {
-      const dataStr = formData.get("contactData") as string;
-      const parsedData = JSON.parse(dataStr);
-      if (parsedData.hero?.image && !validateImageUrl(parsedData.hero.image)) return json({ error: "Invalid image URL in hero section." }, { status: 400 });
-      if (parsedData.location?.image && !validateImageUrl(parsedData.location.image)) return json({ error: "Invalid image URL in location section." }, { status: 400 });
-      const jsonContent = JSON.stringify(parsedData, null, 2);
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "contact", parsedData);
-      }
-
-      await commitToGitHub({
-        token: githubToken,
-        owner,
-        repo,
-        path: "app/content/settings/contact.json",
-        content: jsonContent,
-        message: "update contact page settings"
-      });
-      return json({ success: true, message: "Contact Us settings saved successfully!" });
-    }
-
-    if (intent === "saveSocialPlatforms") {
-      const dataStr = formData.get("socialPlatformData") as string;
-      const parsedData = JSON.parse(dataStr);
-      const jsonContent = JSON.stringify(parsedData, null, 2);
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "social-platforms", parsedData);
-      }
-
-      await commitToGitHub({
-        token: githubToken,
-        owner,
-        repo,
-        path: "app/content/settings/social-platforms.json",
-        content: jsonContent,
-        message: "update social platforms settings"
-      });
-      return json({ success: true, message: "Social Platforms settings saved successfully!" });
-    }
-
-    if (intent === "savePodcastPlatforms") {
-      const dataStr = formData.get("podcastPlatformData") as string;
-      const parsedData = JSON.parse(dataStr);
-      const jsonContent = JSON.stringify(parsedData, null, 2);
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "podcast-platforms", parsedData);
-      }
-
-      await commitToGitHub({
-        token: githubToken,
-        owner,
-        repo,
-        path: "app/content/settings/podcast-platforms.json",
-        content: jsonContent,
-        message: "update podcast platforms settings"
-      });
-      return json({ success: true, message: "Podcast Platforms settings saved successfully!" });
+      return json({ success: true, message: "Message deleted successfully!" });
     }
 
     if (intent === "saveAuthors") {
@@ -654,6 +527,58 @@ export const action = async ({ request, context }: any) => {
       });
       return json({ success: true, intent: "saveAuthors", message: "Authors saved successfully!" });
     }
+
+    if (intent === "saveProfile") {
+      const profileDataStr = formData.get("profileData") as string;
+      const parsedData = JSON.parse(profileDataStr);
+      const contentStr = JSON.stringify(parsedData, null, 2);
+
+      if (env?.DB) {
+        await saveDbSetting(env.DB, "profile", parsedData);
+      }
+
+      await commitToGitHub({
+        token: githubToken,
+        owner,
+        repo,
+        path: `app/content/settings/profile.json`,
+        content: contentStr,
+        message: `config: update profile settings`
+      });
+      return json({ success: true, intent: "saveProfile", message: "Profile settings updated successfully!" });
+    }
+
+    if (intent === "saveSpotlight") {
+      const heroType = formData.get("heroType") as string || "video";
+      const referenceId = formData.get("referenceId") as string || "";
+      const customBanner = formData.get("customBanner") as string || "";
+      const upcomingTitle = formData.get("upcomingTitle") as string || "";
+      const upcomingDate = formData.get("upcomingDate") as string || "";
+      const upcomingDescription = formData.get("upcomingDescription") as string || "";
+
+      const spotlightData: any = { heroType, customBanner };
+      if (heroType === "upcoming") {
+        spotlightData.referenceId = "";
+        spotlightData.upcomingTitle = upcomingTitle;
+        spotlightData.upcomingDate = upcomingDate;
+        spotlightData.upcomingDescription = upcomingDescription;
+      } else {
+        spotlightData.referenceId = referenceId;
+      }
+
+      if (env?.DB) {
+        await saveDbSetting(env.DB, "spotlight", spotlightData);
+      }
+
+      await commitToGitHub({
+        token: githubToken, owner, repo,
+        path: "app/content/settings/spotlight.json",
+        content: JSON.stringify(spotlightData, null, 2),
+        message: "config: update spotlight settings"
+      });
+      return json({ success: true, intent: "saveSpotlight", message: "Spotlight settings saved successfully!" });
+    }
+
     if (intent === "delete") {
       const path = formData.get("path") as string;
       const directItemType = formData.get("itemType") as string;
@@ -677,7 +602,6 @@ export const action = async ({ request, context }: any) => {
 
       return json({ success: true, intent: "delete", itemType, slug, message: "Deleted successfully!" });
     }
-
 
     if (intent === "move") {
       const slug = formData.get("slug") as string;
@@ -708,9 +632,7 @@ export const action = async ({ request, context }: any) => {
 
       if (!validateImageUrl(coverImage)) return json({ error: "Invalid cover image URL." }, { status: 400 });
 
-
       const finalSlug = newSlug || originalSlug || title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-
       const language = formData.get("language") as string || "ml";
       const originalLanguage = formData.get("originalLanguage") as string;
       const translationGroupId = formData.get("translationGroupId") as string;
@@ -759,7 +681,6 @@ ${body}`;
       return json({ success: true, intent, item: articleData, message: `Article "${title}" saved successfully!` });
     }
 
-
     if (intent === "saveVideo") {
       const originalSlug = formData.get("originalSlug") as string;
       const newSlug = formData.get("newSlug") as string;
@@ -774,10 +695,7 @@ ${body}`;
       const date = formData.get("publishedAt") as string || new Date().toISOString().split('T')[0];
       const themePreset = formData.get("themePreset") as string || "theme-malayalam-standard";
 
-      if (!validateImageUrl(customThumbnail)) return json({ error: "Invalid custom thumbnail URL." }, { status: 400 });
-
       const finalSlug = newSlug || originalSlug || title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-
       const language = formData.get("language") as string || "ml";
       const originalLanguage = formData.get("originalLanguage") as string;
       const translationGroupId = formData.get("translationGroupId") as string;
@@ -832,7 +750,6 @@ ${body}`;
       return json({ success: true, intent, item: { slug: finalSlug, type: 'video', ...videoData }, message: `Video "${title}" saved successfully!` });
     }
 
-
     if (intent === "savePodcast") {
       const originalSlug = formData.get("originalSlug") as string;
       const newSlug = formData.get("newSlug") as string;
@@ -847,10 +764,7 @@ ${body}`;
       const body = formData.get("body") as string;
       const date = formData.get("publishedAt") as string || new Date().toISOString().split('T')[0];
 
-      if (!validateImageUrl(customThumbnail)) return json({ error: "Invalid custom thumbnail URL." }, { status: 400 });
-
       const finalSlug = newSlug || originalSlug || title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-
       const language = formData.get("language") as string || "ml";
       const originalLanguage = formData.get("originalLanguage") as string;
       const translationGroupId = formData.get("translationGroupId") as string;
@@ -898,71 +812,6 @@ ${body}`;
       return json({ success: true, intent, item: { slug: finalSlug, type: 'podcast', ...podcastData }, message: `Podcast "${title}" saved successfully!` });
     }
 
-    if (intent === "savePlatformSettings") {
-      const platformsJsonStr = formData.get("platforms") as string;
-      const contentStr = JSON.stringify({ platforms: JSON.parse(platformsJsonStr) }, null, 2);
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "podcast-platforms", { platforms: JSON.parse(platformsJsonStr) });
-      }
-
-      if (githubToken) {
-        await commitToGitHub({
-          token: githubToken,
-          owner,
-          repo,
-          path: `app/content/settings/podcasts.json`,
-          content: contentStr,
-          message: `config: update podcast platforms`
-        });
-      }
-      return json({ success: true, message: "Platform settings updated successfully!" });
-    }
-
-    if (intent === "savePodcastShows") {
-      const podcastShowsDataStr = formData.get("podcastShowsData") as string;
-      const parsedData = JSON.parse(podcastShowsDataStr);
-      const contentStr = JSON.stringify(parsedData, null, 2);
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "podcast-shows", parsedData);
-      }
-
-      if (githubToken) {
-        await commitToGitHub({
-          token: githubToken,
-          owner,
-          repo,
-          path: "app/content/settings/podcast-shows.json",
-          content: contentStr,
-          message: "config: update podcast shows and RSS feeds"
-        });
-      }
-
-      return json({ success: true, intent: "savePodcastShows", message: "Podcast shows and RSS feeds updated successfully!" });
-    }
-
-    if (intent === "saveProfile") {
-      const profileDataStr = formData.get("profileData") as string;
-      const parsedData = JSON.parse(profileDataStr);
-      if (parsedData.logo && !validateImageUrl(parsedData.logo)) return json({ error: "Invalid image URL in profile logo." }, { status: 400 });
-      const contentStr = JSON.stringify(parsedData, null, 2);
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "profile", parsedData);
-      }
-
-      await commitToGitHub({
-        token: githubToken,
-        owner,
-        repo,
-        path: `app/content/settings/profile.json`,
-        content: contentStr,
-        message: `config: update profile settings`
-      });
-      return json({ success: true, intent: "saveProfile", message: "Profile settings updated successfully!" });
-    }
-
     if (intent === "saveProgram") {
       const originalSlug = formData.get("originalSlug") as string;
       const newSlug = formData.get("newSlug") as string;
@@ -978,11 +827,7 @@ ${body}`;
           const match = rawPlaylistId.match(/[?&]list=([a-zA-Z0-9_-]+)/);
           if (match && match[1]) {
             normalizedPlaylistId = match[1];
-          } else {
-            return json({ error: "Invalid YouTube playlist URL." }, { status: 400 });
           }
-        } else if (rawPlaylistId.includes("http://") || rawPlaylistId.includes("https://")) {
-          return json({ error: "Invalid YouTube playlist URL." }, { status: 400 });
         }
       }
 
@@ -990,16 +835,7 @@ ${body}`;
       const status = formData.get("status") as string || "draft";
       const date = formData.get("publishedAt") as string || new Date().toISOString().split('T')[0];
       const language = formData.get("language") as string || "ml";
-      const originalLanguage = formData.get("originalLanguage") as string;
-      const translationGroupId = formData.get("translationGroupId") as string;
-      const isNewRecord = !originalSlug;
-      const shouldSaveLanguage = isNewRecord || language !== "ml" || originalLanguage !== "";
-
-      if (!title) return json({ error: "Program title is required." }, { status: 400 });
-      if (coverImage && !validateImageUrl(coverImage)) return json({ error: "Invalid cover image URL." }, { status: 400 });
-
       const finalSlug = sanitizeSlug(newSlug, title);
-      if (!finalSlug) return json({ error: "Could not generate a valid URL slug from this title. Please provide an English slug manually." }, { status: 400 });
 
       const programData: any = {
         title,
@@ -1011,8 +847,7 @@ ${body}`;
         publishedAt: date,
       };
       if (youtubeThumbnail) programData.youtubeThumbnail = youtubeThumbnail;
-      if (shouldSaveLanguage) programData.language = language;
-      if (translationGroupId) programData.translationGroupId = translationGroupId;
+      programData.language = language;
 
       if (env?.DB) {
         try {
@@ -1034,54 +869,11 @@ ${body}`;
         message: `content: save program ${title}`
       });
 
-      // Automatically fetch playlist videos and save them
-      let syncMessage = `Program "${title}" saved successfully!`;
-      if (normalizedPlaylistId) {
-        try {
-          const playlistVideos = await fetchYouTubePlaylistVideos(normalizedPlaylistId, finalSlug, category, language);
-          if (playlistVideos.length > 0) {
-            for (const vid of playlistVideos) {
-              const vidContent = {
-                title: vid.title,
-                description: vid.description || '',
-                youtubeId: vid.youtubeId,
-                publishedAt: vid.publishedAt,
-                status: 'published',
-                language: vid.language || 'ml',
-                category: vid.category || category || 'General',
-                programId: finalSlug,
-                ...(typeof vid.episodeNumber === 'number' ? { episodeNumber: vid.episodeNumber } : {})
-              };
-              if (env?.DB) {
-                await saveDbVideo(env.DB, { slug: `youtube-${vid.youtubeId}`, ...vidContent });
-              }
-              const vidJson = JSON.stringify(vidContent, null, 2);
-              await commitToGitHub({
-                token: githubToken,
-                owner,
-                repo,
-                path: `app/content/videos/youtube-${vid.youtubeId}.json`,
-                content: vidJson,
-                message: `content: auto-sync playlist video ${vid.title}`
-              });
-            }
-            syncMessage = `Program "${title}" saved and ${playlistVideos.length} playlist videos synced!`;
-          }
-        } catch (err) {
-          console.warn("Failed to auto-fetch playlist videos during program save:", err);
-        }
-      }
-
-      return json({ success: true, intent, item: { slug: finalSlug, type: 'program', ...programData }, message: syncMessage });
+      return json({ success: true, intent, item: { slug: finalSlug, type: 'program', ...programData }, message: `Program "${title}" saved successfully!` });
     }
 
     if (intent === "deleteProgram") {
       const slugToDelete = formData.get("slug") as string;
-      const referencingVideosCount = parseInt(formData.get("referencingVideosCount") as string || "0", 10);
-      if (referencingVideosCount > 0) {
-        return json({ error: `Cannot delete Program: ${referencingVideosCount} video${referencingVideosCount === 1 ? '' : 's'} reference this program. Remove the program assignment from videos first.` }, { status: 400 });
-      }
-
       if (env?.DB) {
         try {
           await deleteDbProgram(env.DB, slugToDelete);
@@ -1099,52 +891,15 @@ ${body}`;
       return json({ success: true, intent: "deleteProgram", slug: slugToDelete, message: "Program deleted successfully!" });
     }
 
-    if (intent === "saveSpotlight") {
-      const heroType = formData.get("heroType") as string || "video";
-      const referenceId = formData.get("referenceId") as string || "";
-      const customBanner = formData.get("customBanner") as string || "";
-      const upcomingTitle = formData.get("upcomingTitle") as string || "";
-      const upcomingDate = formData.get("upcomingDate") as string || "";
-      const upcomingDescription = formData.get("upcomingDescription") as string || "";
-
-      if (customBanner && !validateImageUrl(customBanner)) return json({ error: "Invalid custom banner URL." }, { status: 400 });
-
-      const spotlightData: any = { heroType, customBanner };
-      if (heroType === "upcoming") {
-        spotlightData.referenceId = "";
-        spotlightData.upcomingTitle = upcomingTitle;
-        spotlightData.upcomingDate = upcomingDate;
-        spotlightData.upcomingDescription = upcomingDescription;
-      } else {
-        spotlightData.referenceId = referenceId;
-      }
-
-      if (env?.DB) {
-        await saveDbSetting(env.DB, "spotlight", spotlightData);
-      }
-
-      await commitToGitHub({
-        token: githubToken, owner, repo,
-        path: "app/content/settings/spotlight.json",
-        content: JSON.stringify(spotlightData, null, 2),
-        message: "config: update spotlight settings"
-      });
-      return json({ success: true, intent: "saveSpotlight", message: "Spotlight settings saved successfully!" });
-    }
-
-
     return json({ error: "Unsupported action" }, { status: 400 });
   } catch (error: any) {
-    console.error("GitHub API error:", error);
-    return json({ error: error.message || "Failed to push to GitHub" }, { status: 500 });
+    console.error("Action error:", error);
+    return json({ error: error.message || "Failed to process request" }, { status: 500 });
   }
 };
 
-
-
 export default function AdminDashboard() {
-  const actionDataAny = useActionData<typeof action>() as any;
-  const actionData = actionDataAny;
+  const actionData = useActionData<typeof action>() as any;
   const loaderData = useLoaderData<typeof loader>();
 
   const [articles, setArticles] = useState(loaderData.articles || []);
@@ -1156,7 +911,9 @@ export default function AdminDashboard() {
   const [programPlaylistInput, setProgramPlaylistInput] = useState("");
   const [programThumbnailPreview, setProgramThumbnailPreview] = useState("");
   const [spotlightHeroType, setSpotlightHeroType] = useState<string>(spotlightSettings?.heroType || 'video');
+
   const {
+    contactMessages,
     platformSettings,
     profileSettings,
     homepageSettings,
@@ -1165,25 +922,19 @@ export default function AdminDashboard() {
     socialPlatformSettings,
     podcastPlatformSettings,
     podcastShowsSettings,
-    authorsSettings
+    authorsSettings,
+    headerSettings,
+    heroSettings,
+    pillarsSettings,
+    leadershipSettings,
+    globalNetworkSettings,
+    highlightsSettings,
+    fatwaSettings,
+    educationSettings,
+    getInvolvedSettings,
+    mushawaraSettings,
+    footerSettings
   } = loaderData;
-
-  // Keep state updated whenever server loader revalidates
-  useEffect(() => {
-    if (loaderData?.articles) setArticles(loaderData.articles);
-  }, [loaderData?.articles]);
-
-  useEffect(() => {
-    if (loaderData?.videos) setVideos(loaderData.videos);
-  }, [loaderData?.videos]);
-
-  useEffect(() => {
-    if (loaderData?.podcasts) setPodcasts(loaderData.podcasts);
-  }, [loaderData?.podcasts]);
-
-  useEffect(() => {
-    if (loaderData?.programs) setPrograms(loaderData.programs);
-  }, [loaderData?.programs]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") || searchParams.get("view");
@@ -1222,114 +973,30 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (urlTab && urlTab !== view) {
       setViewState(urlTab);
-    } else if (!urlTab && typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("admin_active_tab");
-        if (saved && saved !== "overview" && saved !== view) {
-          setView(saved);
-        }
-      } catch (e) {}
     }
   }, [urlTab]);
 
   useEffect(() => {
-    if (actionData?.success) {
-      if (actionData.intent === "delete") {
-        if (actionData.itemType === 'article') setArticles(prev => prev.filter(a => a.slug !== actionData.slug));
-        if (actionData.itemType === 'video') setVideos(prev => prev.filter(v => v.slug !== actionData.slug));
-        if (actionData.itemType === 'podcast') setPodcasts(prev => prev.filter(p => p.slug !== actionData.slug));
-      } else if (actionData.intent === "saveArticle") {
-        setArticles(prev => {
-          const exists = prev.find(a => a.slug === actionData.item.slug);
-          const list = exists ? prev.map(a => a.slug === actionData.item.slug ? actionData.item : a) : [actionData.item, ...prev];
-          return list.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        });
-        setView("articles");
-      } else if (actionData.intent === "saveVideo") {
-        setVideos(prev => {
-          const exists = prev.find(v => v.slug === actionData.item.slug);
-          const list = exists ? prev.map(v => v.slug === actionData.item.slug ? actionData.item : v) : [actionData.item, ...prev];
-          return list.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        });
-        setView("videos");
-      } else if (actionData.intent === "savePodcast") {
-        setPodcasts(prev => {
-          const exists = prev.find(p => p.slug === actionData.item.slug);
-          const list = exists ? prev.map(p => p.slug === actionData.item.slug ? actionData.item : p) : [actionData.item, ...prev];
-          return list.sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-        });
-        setView("podcasts");
-      } else if (actionData.intent === "saveProgram") {
-        setPrograms(prev => {
-          const exists = prev.find((p: any) => p.slug === actionData.item.slug);
-          const list = exists ? prev.map((p: any) => p.slug === actionData.item.slug ? actionData.item : p) : [actionData.item, ...prev];
-          return list.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-        });
-        setView("programs");
-      } else if (actionData.intent === "deleteProgram") {
-        setPrograms(prev => prev.filter((p: any) => p.slug !== actionData.slug));
-        setView("programs");
-      } else if (actionData.intent === "saveAuthors") {
-        setView("authors");
-      } else if (actionData.intent === "savePodcastShows") {
-        setView("settings-podcast-shows");
-      } else if (actionData.intent === "saveSpotlight") {
-        setView("spotlight");
-      } else if (actionData.intent === "saveProfile") {
-        setView("profile");
-      } else if (actionData.intent === "saveHomepage") {
-        setView("homepage");
-      } else if (actionData.intent === "saveAbout") {
-        setView("settings-about");
-      } else if (actionData.intent === "saveContact") {
-        setView("settings-contact");
-      } else if (actionData.intent === "saveSocialPlatforms") {
-        setView("settings-social-platforms");
-      } else if (actionData.intent === "savePodcastPlatforms") {
-        setView("settings-podcast-platforms");
-      }
-    }
-  }, [actionData]);
-
-  const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsCreateDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const navigation = useNavigation();
-  const submit = useSubmit();
+    if (loaderData?.articles) setArticles(loaderData.articles);
+    if (loaderData?.videos) setVideos(loaderData.videos);
+    if (loaderData?.podcasts) setPodcasts(loaderData.podcasts);
+    if (loaderData?.programs) setPrograms(loaderData.programs);
+  }, [loaderData]);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Lists state
   const [searchQuery, setSearchQuery] = useState("");
   const [langFilter, setLangFilter] = useState<"all" | "ml" | "en">("all");
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-
-  const handleCategoryClick = (category: string) => {
-    setView(category);
-    setPage(1);
-    setSearchQuery("");
-    setExpandedSection(prev => prev === category ? null : category);
-  };
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Editor state
+  // Editor states
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editorContent, setEditorContent] = useState("");
   const [youtubePreviewId, setYoutubePreviewId] = useState("");
   const [youtubeInput, setYoutubeInput] = useState("");
-  const [platformsState, setPlatformsState] = useState(platformSettings?.platforms || []);
 
+  const navigation = useNavigation();
+  const submit = useSubmit();
   const isDeploying = navigation.state === "submitting" && navigation.formData?.get("intent") === "deploy";
   const isSubmitting = navigation.state === "submitting" && !isDeploying;
 
@@ -1342,49 +1009,6 @@ export default function AdminDashboard() {
       const ext = type === 'article' ? '.mdx' : '.json';
       const folder = type === 'article' ? 'articles' : type === 'video' ? 'videos' : 'podcasts';
       submit({ intent: "delete", path: `app/content/${folder}/${slug}${ext}`, itemType: type, slug }, { method: "post" });
-    }
-  };
-
-
-  const handleDeleteProgram = (slug: string) => {
-    const referencingCount = videos.filter((v: any) => v.programId === slug).length;
-    if (referencingCount > 0) {
-      alert(`Cannot delete Program: ${referencingCount} video${referencingCount === 1 ? '' : 's'} reference this program. Remove the program assignment from videos first.`);
-      return;
-    }
-    if (window.confirm('Are you sure you want to delete this program? This cannot be undone.')) {
-      submit({ intent: "deleteProgram", slug, referencingVideosCount: String(referencingCount) }, { method: "post" });
-    }
-  };
-
-  const handleMove = (item: any, type: 'article' | 'video' | 'podcast') => {
-    const newDate = window.prompt("Enter new date (YYYY-MM-DD):", item.publishedAt);
-    if (newDate && newDate !== item.publishedAt) {
-      let contentStr = "";
-      if (type === 'article') {
-        contentStr = `---
-title: ${JSON.stringify(item.title)}
-advancedTitle: ${JSON.stringify(item.advancedTitle || item.title)}
-themePreset: ${JSON.stringify(item.themePreset)}
-publishedAt: ${JSON.stringify(newDate)}
-coverImage: ${JSON.stringify(item.coverImage || '')}
-thumbImage: ${JSON.stringify(item.thumbImage || '')}
-category: ${JSON.stringify(item.category || 'News')}
-author: ${JSON.stringify(item.author || 'admin')}
-seoTitle: ${JSON.stringify(item.seoTitle || '')}
-seoDescription: ${JSON.stringify(item.seoDescription || '')}
-excerpt: ${JSON.stringify(item.excerpt)}
-status: ${JSON.stringify(item.status || 'published')}
----
-
-${item.body}`;
-      } else {
-        const videoData = { ...item, publishedAt: newDate };
-        delete videoData.slug;
-        delete videoData.type;
-        contentStr = JSON.stringify(videoData, null, 2);
-      }
-      submit({ intent: "move", slug: item.slug, contentStr, newDate, type }, { method: "post" });
     }
   };
 
@@ -1418,21 +1042,6 @@ ${item.body}`;
     setIsMobileMenuOpen(false);
   };
 
-  // YouTube Extract Logic
-  useEffect(() => {
-    if (youtubeInput) {
-      const match = youtubeInput.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\n]+)/);
-      if (match && match[1]) {
-        setYoutubePreviewId(match[1]);
-      } else {
-        setYoutubePreviewId(youtubeInput);
-      }
-    } else {
-      setYoutubePreviewId("");
-    }
-  }, [youtubeInput]);
-
-
   const openPodcastEditor = (podcast?: any) => {
     if (podcast) {
       setEditingItem(podcast);
@@ -1462,17 +1071,18 @@ ${item.body}`;
     setIsMobileMenuOpen(false);
   };
 
-  // Program Playlist Thumbnail Extraction Logic
   useEffect(() => {
-    if (programPlaylistInput) {
-      const matchV = programPlaylistInput.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-      if (matchV && matchV[1]) {
-        setProgramThumbnailPreview(`https://img.youtube.com/vi/${matchV[1]}/hqdefault.jpg`);
+    if (youtubeInput) {
+      const match = youtubeInput.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\n]+)/);
+      if (match && match[1]) {
+        setYoutubePreviewId(match[1]);
+      } else {
+        setYoutubePreviewId(youtubeInput);
       }
     } else {
-      setProgramThumbnailPreview("");
+      setYoutubePreviewId("");
     }
-  }, [programPlaylistInput]);
+  }, [youtubeInput]);
 
   const activeList = view === "articles" ? articles : (view === "videos" ? videos : view === "podcasts" ? podcasts : []);
   const filteredList = activeList.filter((a: any) => {
@@ -1486,833 +1096,650 @@ ${item.body}`;
   const paginatedList = filteredList.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const totalPages = Math.ceil(filteredList.length / itemsPerPage);
 
-  const allRecentActivity = [...articles, ...videos, ...podcasts].sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()).slice(0, 5);
-
   const StatusBadge = ({ status }: { status: string }) => {
-    if (status === 'draft') return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Draft</span>;
-    if (status === 'scheduled') return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Scheduled</span>;
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Published</span>;
+    if (status === 'draft') return <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-yellow-100 text-yellow-800">Draft</span>;
+    if (status === 'scheduled') return <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-purple-100 text-purple-800">Scheduled</span>;
+    return <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-green-100 text-green-800">Published</span>;
   };
 
+  // Nav Items definition for Sidebar
+  const navItems = [
+    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { id: "contact-messages", label: "Contact Messages", icon: Mail, badge: contactMessages.filter((m: any) => m.status === 'unread').length || undefined },
+    { id: "settings-header", label: "Header", icon: Compass },
+    { id: "settings-hero", label: "Hero Settings", icon: Sliders },
+    { id: "settings-pillars", label: "Core Pillars", icon: Layers },
+    { id: "settings-leadership", label: "Leadership", icon: Award },
+    { id: "settings-global-network", label: "Global Network", icon: Globe },
+    { id: "settings-highlights", label: "Key Highlights", icon: Activity },
+    { id: "articles", label: "News & Updates", icon: FileText },
+    { id: "settings-about", label: "About Settings", icon: Sparkles },
+    { id: "settings-fatwa", label: "Ideology & Fatwa", icon: BookOpenCheck },
+    { id: "settings-education", label: "Education Settings", icon: GraduationCap },
+    { id: "settings-social-platforms", label: "Network Settings", icon: Globe },
+    { id: "authors", label: "Publications & Authors", icon: User },
+    { id: "settings-get-involved", label: "Get Involved Settings", icon: MessageSquare },
+    { id: "settings-mushawara", label: "Mushawara Members", icon: Users },
+    { id: "settings-contact", label: "Contact Settings", icon: Mail },
+    { id: "settings-footer", label: "Footer", icon: LayoutTemplate },
+    { id: "videos", label: "Videos & Series", icon: Video },
+    { id: "podcasts", label: "Podcasts & Feeds", icon: Mic },
+    { id: "profile", label: "Bio / Hub Profile", icon: User },
+    { id: "homepage", label: "Featured Overrides", icon: LayoutDashboard }
+  ];
+
+  // Dashboard content cards for the grid
+  const dashboardCards = [
+    { id: "contact-messages", title: "Contact Messages Inbox", desc: "Read, reply to, and manage contact form submission enquiries", icon: Mail },
+    { id: "settings-get-involved", title: "WhatsApp Group Settings", desc: "Manage WhatsApp group invite link, title, button text, and details", icon: MessageSquare },
+    { id: "settings-header", title: "Header", desc: "Brand labels, logo, and navigation links", icon: Compass },
+    { id: "settings-hero", title: "Hero Settings", desc: "Hero titles, CTA buttons, background, and highlights", icon: Sliders },
+    { id: "settings-about", title: "About Page Settings", desc: "Overview, constitution, history and timeline", icon: Sparkles },
+    { id: "settings-pillars", title: "Core Pillars", desc: "Organisation focus areas, knowledge & community pillars", icon: Layers },
+    { id: "settings-leadership", title: "Leadership", desc: "Prominent leaders, photo portraits, and their roles", icon: Award },
+    { id: "settings-global-network", title: "Global Network", desc: "Global map image and worldwide diaspora chapters", icon: Globe },
+    { id: "settings-highlights", title: "Key Highlights", desc: "Stats and metrics counters (Madrasas, students, teachers)", icon: Activity },
+    { id: "articles", title: "News & Updates", desc: "Articles, editorial posts, and official announcements", icon: FileText },
+    { id: "settings-fatwa", title: "Fatwa Page Settings", desc: "Banner, ideological stance, and recent fatwas", icon: BookOpenCheck },
+    { id: "settings-contact", title: "Contact Page Settings", desc: "Address, phone, email, map URL, working hours, and notes", icon: Mail },
+    { id: "settings-footer", title: "Footer", desc: "Brand details, social links, contact, and quick links", icon: LayoutTemplate },
+    { id: "authors", title: "Authors & Scholars", desc: "Scholars, writers, biographic details, and avatars", icon: User },
+    { id: "settings-education", title: "Education Ecosystem", desc: "Institutions, universities, syllabus, and board facts", icon: GraduationCap },
+    { id: "settings-mushawara", title: "Mushawara Council", desc: "Supreme 40-member decision-making council members", icon: Users },
+    { id: "videos", title: "Videos & Series", desc: "YouTube playlist sync, programs, and video library", icon: Video },
+    { id: "podcasts", title: "Podcasts & Audio Shows", desc: "Episodes, Spotify/Apple feeds, and waveform audio", icon: Mic }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 font-inter flex flex-col">
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button className="md:hidden p-2 text-gray-500" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView("overview")}>
-              <img src="/Logo.png" alt="Samastha Graph Logo" className="h-14 w-auto sm:h-16" />
+    <div className="min-h-screen bg-[#F8F9FA] flex text-[#1F2937] font-sans antialiased">
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-[#230715] text-[#F3E8EE] flex-shrink-0 flex flex-col justify-between hidden md:flex border-r border-[#380E23]">
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Logo Brand Header */}
+          <div className="p-5 flex items-center gap-3 border-b border-white/5 cursor-pointer" onClick={() => setView("overview")}>
+            <div className="w-10 h-10 rounded-full bg-[#E5A93C] text-[#230715] font-black text-xl flex items-center justify-center shadow-md">
+              S
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-base text-white tracking-wide leading-tight">Samastha CMS</span>
+              <span className="text-[10px] font-semibold tracking-widest text-[#E5A93C]/80 uppercase">ADMINISTRATOR</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-full">
-               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-               <span className="text-xs font-semibold text-green-700">System Ready</span>
+          {/* Nav List */}
+          <div className="p-3 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="px-3 pt-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+              CONTENT
             </div>
-            <Form method="post">
-              <input type="hidden" name="originalSlug" value={editingItem?.slug || ""} />
-                <input type="hidden" name="intent" value="logout" />
-              <button type="submit" className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-sm transition-colors">
-                <LogOut size={16} /> Logout
-              </button>
-            </Form>
+
+            {navItems.map(item => {
+              const Icon = item.icon;
+              const isActive = view === item.id || (item.id === "articles" && view.includes("Article")) || (item.id === "videos" && (view.includes("Video") || view.includes("Program"))) || (item.id === "podcasts" && view.includes("Podcast"));
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setView(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                    isActive
+                      ? "bg-[#431326] text-white shadow-sm"
+                      : "text-[#D9C2CE] hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon size={16} className={isActive ? "text-[#E5A93C]" : "text-[#B3889D]"} />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {isActive && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#E5A93C] shadow-sm ml-2 flex-shrink-0" />
+                  )}
+                  {!isActive && item.badge && (
+                    <span className="px-1.5 py-0.5 bg-[#861937] text-white text-[10px] rounded-full font-bold ml-2">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-white/5 space-y-2 bg-[#1A0510]">
+          <a
+            href="https://fiqhfiles.samasthagraph.com/admin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-[#D9C2CE] hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <span className="flex items-center gap-2"><ExternalLink size={14} /> Fiqh Files CMS</span>
+            <span className="text-[10px] text-[#E5A93C]">↗</span>
+          </a>
+          <Form method="post">
+            <input type="hidden" name="intent" value="logout" />
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-300 hover:text-white hover:bg-rose-900/30 transition-colors"
+            >
+              <LogOut size={14} /> Log Out
+            </button>
+          </Form>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT WRAPPER */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* TOP BAR */}
+        <header className="h-16 bg-white border-b border-gray-200 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+              <span className="cursor-pointer hover:text-gray-900" onClick={() => setView("overview")}>CONTROL PANEL</span>
+              <span>•</span>
+              <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] tracking-wider">CONNECTED</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              target="_blank"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <Eye size={14} /> View Site
+            </Link>
+
             <button
               onClick={handleDeploy}
               disabled={isDeploying || isSubmitting}
-              className="flex items-center gap-2 bg-[#c8a136] hover:bg-[#b08d2f] text-white px-4 py-2 rounded-sm text-sm font-semibold transition-colors disabled:opacity-50 shadow-sm"
+              className="flex items-center gap-2 bg-[#E5A93C] hover:bg-[#D0962C] text-[#230715] px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs disabled:opacity-50"
             >
-              <RefreshCw size={16} className={isDeploying ? "animate-spin" : ""} />
-              <span className="hidden sm:inline">{isDeploying ? "Deploying..." : "Deploy to Cloudflare"}</span>
+              <RefreshCw size={14} className={isDeploying ? "animate-spin" : ""} />
+              <span>{isDeploying ? "Deploying..." : "Deploy to Cloudflare"}</span>
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-200 shadow-lg absolute w-full z-40 pb-4">
-          <div className="px-4 pt-4 space-y-3 max-h-[80vh] overflow-y-auto">
-            <button onClick={() => { setView("overview"); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "overview" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-              <LayoutDashboard size={18} /> Overview Hub
-            </button>
-
-            <h4 className="px-4 pt-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Content</h4>
-
-            <div>
-              <button onClick={() => handleCategoryClick("articles")} className={`w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-medium transition-colors ${view.includes("article") || view.includes("Article") ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <div className="flex items-center gap-3"><FileText size={18} /> Articles</div>
-                <ChevronDown size={16} className={`transform transition-transform ${expandedSection === "articles" ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSection === "articles" && (
-                <div className="pl-11 pr-4 py-2 space-y-1 bg-gray-50 border-l-2 border-[#15664a] ml-4 mt-1 rounded-r-sm">
-                  <button onClick={() => { setView("articles"); setPage(1); setSearchQuery(""); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "articles" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>List Articles</button>
-                  <button onClick={() => { openArticleEditor(); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "newArticle" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>+ Create Article</button>
+        {/* MOBILE DRAWER */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50 bg-black/60 flex">
+            <div className="w-72 bg-[#230715] text-[#F3E8EE] flex flex-col justify-between p-4 h-full">
+              <div className="space-y-4 overflow-y-auto">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <span className="font-bold text-white">Samastha CMS</span>
+                  <button onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
                 </div>
-              )}
-            </div>
-
-            <div>
-              <button onClick={() => handleCategoryClick("videos")} className={`w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-medium transition-colors ${view.includes("video") || view.includes("Video") || view.includes("program") || view.includes("Program") ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <div className="flex items-center gap-3"><Video size={18} /> Videos</div>
-                <ChevronDown size={16} className={`transform transition-transform ${expandedSection === "videos" ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSection === "videos" && (
-                <div className="pl-11 pr-4 py-2 space-y-1 bg-gray-50 border-l-2 border-[#15664a] ml-4 mt-1 rounded-r-sm">
-                  <div className="text-xs font-bold text-gray-400 mb-1 mt-2 uppercase tracking-wider">All Videos</div>
-                  <button onClick={() => { setView("videos"); setPage(1); setSearchQuery(""); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "videos" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>List Videos</button>
-                  <button onClick={() => { openVideoEditor(); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "newVideo" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>+ Create Video</button>
-                  <div className="text-xs font-bold text-gray-400 mb-1 mt-3 uppercase tracking-wider">Programs</div>
-                  <button onClick={() => { setView("programs"); setPage(1); setSearchQuery(""); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "programs" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>List Programs</button>
-                  <button onClick={() => { openProgramEditor(); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "newProgram" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>+ Create Program</button>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button onClick={() => handleCategoryClick("podcasts")} className={`w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "podcasts" || view === "newPodcast" || view === "editPodcast" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <div className="flex items-center gap-3"><Mic size={18} /> Podcasts</div>
-                <ChevronDown size={16} className={`transform transition-transform ${expandedSection === "podcasts" ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSection === "podcasts" && (
-                <div className="pl-11 pr-4 py-2 space-y-1 bg-gray-50 border-l-2 border-[#15664a] ml-4 mt-1 rounded-r-sm">
-                  <button onClick={() => { setView("podcasts"); setPage(1); setSearchQuery(""); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "podcasts" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>List Podcasts</button>
-                  <button onClick={() => { openPodcastEditor(); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "newPodcast" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>+ Create Podcast</button>
-                </div>
-              )}
-            </div>
-
-
-            <button onClick={() => { setView("authors"); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "authors" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-              <User size={18} /> Authors &amp; Scholars
-            </button>
-
-            <button onClick={() => { setView("spotlight"); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "spotlight" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-              <Eye size={18} /> Spotlight
-            </button>
-
-            <h4 className="px-4 pt-2 text-xs font-bold text-gray-400 uppercase tracking-wider">System</h4>
-            <button onClick={() => { setView("profile"); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "profile" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-              <User size={18} /> Profile Settings
-            </button>
-            <button onClick={() => { setView("homepage"); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "homepage" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-              <LayoutDashboard size={18} /> Homepage Settings
-            </button>
-            <div>
-              <button onClick={() => handleCategoryClick("settings")} className={`w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-medium transition-colors ${view.startsWith("settings-") ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <div className="flex items-center gap-3"><Settings size={18} /> Settings</div>
-                <ChevronDown size={16} className={`transform transition-transform ${expandedSection === "settings" ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSection === "settings" && (
-                <div className="pl-11 pr-4 py-2 space-y-1 bg-gray-50 border-l-2 border-[#15664a] ml-4 mt-1 rounded-r-sm">
-                  <button onClick={() => { setView("settings-podcast-shows"); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-podcast-shows" ? "text-[#15664a] font-bold" : "text-gray-600 hover:text-gray-900"}`}>Podcast Shows & RSS</button>
-                  <button onClick={() => { setView("settings-about"); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-about" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>About Us</button>
-                  <button onClick={() => { setView("settings-contact"); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-contact" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>Contact Us</button>
-                  <button onClick={() => { setView("settings-social-platforms"); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-social-platforms" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>Social Platforms</button>
-                  <button onClick={() => { setView("settings-podcast-platforms"); setIsMobileMenuOpen(false); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-podcast-platforms" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>Podcast Platforms</button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex gap-8">
-        <aside className="hidden md:block w-64 flex-shrink-0">
-          <nav className="space-y-6">
-            <div>
-              <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Main</h4>
-              <button onClick={() => setView("overview")} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "overview" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <LayoutDashboard size={18} /> Overview Hub
-              </button>
-            </div>
-            <div>
-              <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Content</h4>
-              <button onClick={() => { setView("articles"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "articles" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <FileText size={18} /> Articles
-              </button>
-              <button onClick={() => { setView("videos"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "videos" || view === "programs" || view === "newProgram" || view === "editProgram" || view === "newVideo" || view === "editVideo" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <Video size={18} /> Videos
-              </button>
-              <button onClick={() => { setView("podcasts"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "podcasts" || view === "newPodcast" || view === "editPodcast" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <Mic size={18} /> Podcasts
-              </button>
-              <button onClick={() => { setView("authors"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "authors" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <User size={18} /> Authors &amp; Scholars
-              </button>
-              <button onClick={() => { setView("settings-podcast-shows"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "settings-podcast-shows" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <Radio size={18} /> Podcast Shows & RSS
-              </button>
-
-              <button onClick={() => { setView("spotlight"); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "spotlight" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <Eye size={18} /> Spotlight
-              </button>
-              <button onClick={() => { setView("profile"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "profile" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <User size={18} /> Profile Hub
-              </button>
-              <button onClick={() => { setView("homepage"); setPage(1); setSearchQuery(""); }} className={`w-full flex items-center gap-3 text-left px-4 py-2.5 rounded-sm font-medium transition-colors ${view === "homepage" ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <LayoutDashboard size={18} /> Homepage Settings
-              </button>
-            </div>
-            <div>
-              <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">System</h4>
-              <button onClick={() => handleCategoryClick("settings")} className={`w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-medium transition-colors ${view.startsWith("settings-") ? "bg-[#15664a] text-white" : "text-gray-700 hover:bg-gray-100"}`}>
-                <div className="flex items-center gap-3"><Settings size={18} /> Settings</div>
-                <ChevronDown size={16} className={`transform transition-transform ${expandedSection === "settings" ? 'rotate-180' : ''}`} />
-              </button>
-              {expandedSection === "settings" && (
-                <div className="pl-11 pr-4 py-2 space-y-1 bg-gray-50 border-l-2 border-[#15664a] ml-4 mt-1 rounded-r-sm">
-                  <button onClick={() => { setView("settings-podcast-shows"); setPage(1); setSearchQuery(""); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-podcast-shows" ? "text-[#15664a] font-bold" : "text-gray-600 hover:text-gray-900"}`}>Podcast Shows & RSS</button>
-                  <button onClick={() => { setView("settings-about"); setPage(1); setSearchQuery(""); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-about" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>About Us</button>
-                  <button onClick={() => { setView("settings-contact"); setPage(1); setSearchQuery(""); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-contact" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>Contact Us</button>
-                  <button onClick={() => { setView("settings-social-platforms"); setPage(1); setSearchQuery(""); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-social-platforms" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>Social Platforms</button>
-                  <button onClick={() => { setView("settings-podcast-platforms"); setPage(1); setSearchQuery(""); }} className={`block w-full text-left py-1.5 text-sm font-medium ${view === "settings-podcast-platforms" ? "text-[#15664a]" : "text-gray-600 hover:text-gray-900"}`}>Podcast Platforms</button>
-                </div>
-              )}
-            </div>
-            <div>
-              <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">External Systems</h4>
-              <a href="https://fiqhfiles.samasthagraph.com/admin" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-medium transition-colors text-gray-700 hover:bg-gray-100">
-                <div className="flex items-center gap-3"><ExternalLink size={18} /> Fiqh Files CMS ↗</div>
-              </a>
-            </div>
-            <div>
-              <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h4>
-              <div className="relative px-4" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
-                  className="w-full flex items-center justify-between bg-[#15664a] text-white px-4 py-2.5 rounded-sm font-medium hover:bg-[#0f4d38] transition-colors shadow-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <Plus size={18} /> Create New
-                  </div>
-                  <ChevronDown size={16} className={`transform transition-transform ${isCreateDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {isCreateDropdownOpen && (
-                  <div className="absolute top-full left-4 right-4 mt-2 bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden z-50">
-                    <button onClick={() => { openArticleEditor(); setIsCreateDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100">
-                      <FileText size={16} className="text-blue-600" /> New Article
+                <div className="space-y-1">
+                  {navItems.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => { setView(item.id); setIsMobileMenuOpen(false); }}
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 ${
+                        view === item.id ? "bg-[#431326] text-white" : "text-[#D9C2CE] hover:bg-white/5"
+                      }`}
+                    >
+                      <item.icon size={16} /> {item.label}
                     </button>
-                    <button onClick={() => { openVideoEditor(); setIsCreateDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100">
-                      <Video size={16} className="text-red-600" /> New Video
-                    </button>
-                    <button onClick={() => { openPodcastEditor(); setIsCreateDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100">
-                      <Mic size={16} className="text-purple-600" /> New Podcast
-                    </button>
-                    <button onClick={() => { setView("authors"); setIsCreateDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-3">
-                      <User size={16} className="text-emerald-600" /> Authors &amp; Scholars
-                    </button>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
-          </nav>
-        </aside>
+            <div className="flex-1" onClick={() => setIsMobileMenuOpen(false)} />
+          </div>
+        )}
 
-        <main className="flex-1 min-w-0">
+        {/* PAGE CONTENT */}
+        <main className="flex-1 p-6 sm:p-8 lg:p-10 max-w-7xl w-full mx-auto">
           {actionData?.success && (
-            <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-sm flex justify-between items-center shadow-sm">
-              <p>{actionData.message}</p>
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 mb-6 rounded-xl flex items-center gap-3 shadow-xs">
+              <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+              <p className="text-sm font-semibold">{actionData.message}</p>
             </div>
           )}
           {actionData?.error && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-sm shadow-sm">
-              <p>{actionData.error}</p>
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 mb-6 rounded-xl shadow-xs">
+              <p className="text-sm font-semibold">{actionData.error}</p>
             </div>
           )}
 
-          {/* Programs List View */}
-          {view === "programs" && (
-            <div>
-              <div className="flex border-b border-gray-200 bg-gray-50 mb-6 rounded-t-sm shadow-sm">
-                <button onClick={() => setView("videos")} className="px-6 py-3 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">All Videos</button>
-                <button onClick={() => setView("programs")} className="px-6 py-3 border-b-2 font-medium text-sm border-[#15664a] text-[#15664a]">Programs / Playlists</button>
+          {/* DASHBOARD VIEW (Reference Image Style) */}
+          {view === "overview" && (
+            <div className="space-y-8 animate-[fade-in_0.2s_ease-out]">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 font-heading">Dashboard</h1>
+                <p className="text-xs text-gray-500 mt-1">Manage your website content. Select a section below to get started.</p>
               </div>
-              <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Programs &amp; Series</h1>
-                  <p className="text-gray-500 mt-1">Manage video programs and series collections.</p>
+
+              {/* 3 Top Summary Boxes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs">
+                  <div className="text-3xl font-extrabold text-[#781B38] font-heading">18</div>
+                  <div className="text-sm font-bold text-gray-800 mt-1">Content Sections</div>
+                  <div className="text-xs text-gray-400 mt-0.5">managed via CMS</div>
                 </div>
-                <button onClick={() => openProgramEditor()} className="flex items-center gap-2 bg-[#15664a] text-white px-4 py-2 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors shadow-sm">
-                  <Plus size={18} /> Create Program
-                </button>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <div className="relative flex-1">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" placeholder="Search programs..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none text-sm" />
+
+                <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs">
+                  <div className="text-3xl font-extrabold text-[#781B38] font-heading">12</div>
+                  <div className="text-sm font-bold text-gray-800 mt-1">Singletons</div>
+                  <div className="text-xs text-gray-400 mt-0.5">single-instance configs</div>
                 </div>
-                <select value={langFilter} onChange={e => setLangFilter(e.target.value as any)} className="px-3 py-2 border border-gray-200 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none text-sm bg-white">
-                  <option value="all">All Languages</option>
-                  <option value="ml">Malayalam</option>
-                  <option value="en">English</option>
-                </select>
+
+                <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs">
+                  <div className="text-3xl font-extrabold text-[#781B38] font-heading">6</div>
+                  <div className="text-sm font-bold text-gray-800 mt-1">Collections</div>
+                  <div className="text-xs text-gray-400 mt-0.5">multi-entry resources</div>
+                </div>
               </div>
-              <div className="bg-white border border-gray-200 rounded-sm overflow-hidden">
-                {programs.filter((p: any) => {
-                  const searchMatch = p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || p.slug?.toLowerCase().includes(searchQuery.toLowerCase());
-                  const lang = p.language || "ml";
-                  if (langFilter === "all") return searchMatch;
-                  if (langFilter === "ml") return searchMatch && lang === "ml";
-                  if (langFilter === "en") return searchMatch && lang === "en";
-                  return searchMatch;
-                }).length === 0 ? (
-                  <div className="p-12 text-center text-gray-400">
-                    <BarChart2 size={40} className="mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">No programs found.</p>
-                    <p className="text-sm mt-1">Create your first Program using the button above.</p>
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-200">
-                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Title</th>
-                        <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Language</th>
-                        <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Category</th>
-                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                        <th className="text-right px-4 py-3 font-semibold text-gray-600">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {programs.filter((p: any) => {
-                        const searchMatch = p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || p.slug?.toLowerCase().includes(searchQuery.toLowerCase());
-                        const lang = p.language || "ml";
-                        if (langFilter === "all") return searchMatch;
-                        if (langFilter === "ml") return searchMatch && lang === "ml";
-                        if (langFilter === "en") return searchMatch && lang === "en";
-                        return searchMatch;
-                      }).map((program: any) => (
-                        <tr key={program.slug} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-gray-800 break-words">{program.title}</div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <div className="text-xs text-gray-400">{program.slug}</div>
-                              <div className="text-[10px] font-semibold text-[#15664a] bg-[#15664a]/10 px-1.5 py-0.5 rounded-sm">
-                                {videos.filter(v => v.programId === program.slug).length} {videos.filter(v => v.programId === program.slug).length === 1 ? 'video' : 'videos'}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 hidden sm:table-cell">
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{program.language === 'en' ? 'EN' : 'ML'}</span>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell text-gray-600">{program.category || 'General'}</td>
-                          <td className="px-4 py-3"><StatusBadge status={program.status || 'draft'} /></td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => openProgramEditor(program)} className="p-1.5 text-gray-500 hover:text-[#15664a] hover:bg-green-50 rounded-sm transition-colors" title="Edit">
-                                <Edit size={16} />
-                              </button>
-                              <button onClick={() => handleDeleteProgram(program.slug)} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-sm transition-colors" title="Delete">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+
+              {/* Content Sections Grid */}
+              <div className="space-y-4">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  CONTENT SECTIONS
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {dashboardCards.map(card => {
+                    const CardIcon = card.icon;
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => setView(card.id)}
+                        className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs hover:border-[#781B38]/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex gap-4 items-start group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-[#FDF2F4] text-[#781B38] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                          <CardIcon size={18} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 font-bold text-sm text-gray-900 group-hover:text-[#781B38] transition-colors">
+                            <span>{card.title}</span>
+                            <span className="text-gray-400 group-hover:translate-x-0.5 transition-transform text-xs">→</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed line-clamp-2">
+                            {card.desc}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Program Editor (Create / Edit) */}
-          {(view === "newProgram" || view === "editProgram") && (
-            <div>
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-800">{view === "newProgram" ? "Create Program" : "Edit Program"}</h1>
-                  <p className="text-gray-500 mt-1">{view === "newProgram" ? "Add a new video program or series." : `Editing: ${editingProgram?.title}`}</p>
-                </div>
-                <button type="button" onClick={() => setView("programs")} className="px-4 py-2 border border-gray-300 rounded-sm text-gray-700 font-semibold hover:bg-gray-50">Cancel</button>
-              </div>
-              <Form method="post" className="space-y-6 bg-white p-6 rounded-sm border border-gray-200 shadow-sm">
-                <input type="hidden" name="intent" value="saveProgram" />
-                <input type="hidden" name="originalSlug" value={editingProgram?.slug || ""} />
-                <input type="hidden" name="originalLanguage" value={editingProgram?.language || ""} />
-
-                {/* Status */}
-                <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 p-4 rounded-sm border border-gray-200 gap-4">
-                  <span className="font-semibold text-gray-700">Visibility Status</span>
-                  <div className="flex flex-wrap gap-3">
-                    <label className="flex items-center gap-2 bg-white px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-50">
-                      <input type="radio" name="status" value="published" defaultChecked={editingProgram?.status === 'published' || !editingProgram?.status} className="accent-[#15664a]" />
-                      <span className="text-sm font-medium text-gray-800">Published</span>
-                    </label>
-                    <label className="flex items-center gap-2 bg-white px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-50">
-                      <input type="radio" name="status" value="scheduled" defaultChecked={editingProgram?.status === 'scheduled'} className="accent-[#15664a]" />
-                      <span className="text-sm font-medium text-gray-800">Scheduled</span>
-                    </label>
-                    <label className="flex items-center gap-2 bg-white px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-50">
-                      <input type="radio" name="status" value="draft" defaultChecked={editingProgram?.status === 'draft'} className="accent-[#15664a]" />
-                      <span className="text-sm font-medium text-gray-800">Draft (Hidden)</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
-                  <input type="text" name="title" defaultValue={editingProgram?.title} required className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" />
-                </div>
-
-                {/* Slug */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">URL Slug (Optional: Leave blank to auto-generate from title)</label>
-                  <input type="text" name="newSlug" defaultValue={editingProgram?.slug || ""} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="e.g. minal-qalb" />
-                  <p className="text-xs text-gray-400 mt-1">Must use English/ASCII characters only. Never use Malayalam text as a slug.</p>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
-                  <textarea name="description" defaultValue={editingProgram?.description || ''} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" />
-                </div>
-
-                {/* Cover Image */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image (Optional)</label>
-                  <input type="text" name="coverImage" defaultValue={editingProgram?.coverImage || ''} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="https://..." />
-                  <p className="text-xs text-gray-400 mt-1">Leave blank to use the YouTube-derived thumbnail when available.</p>
-                </div>
-                
-                {/* Preview */}
-                <div className="mb-6 p-4 border border-gray-200 rounded-sm bg-gray-50 flex flex-col gap-2">
-                   <p className="text-sm font-semibold text-gray-700">Preview</p>
-                   <div className="aspect-video w-48 bg-[#2D5A46]/10 relative overflow-hidden rounded-sm flex items-center justify-center">
-                     {editingProgram?.coverImage ? (
-                        <img src={editingProgram.coverImage} className="w-full h-full object-cover" alt="Custom Cover" />
-                     ) : programThumbnailPreview ? (
-                        <img src={programThumbnailPreview} className="w-full h-full object-cover" alt="YouTube Thumbnail" />
-                     ) : (
-                        <span className="text-[#2D5A46]/40 text-xl font-bold">▶</span>
-                     )}
-                   </div>
-                   <input type="hidden" name="youtubeThumbnail" value={programThumbnailPreview} />
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
-                  <select name="category" defaultValue={editingProgram?.category || 'General'} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none bg-white">
-                    <option value="Tafsir">Tafsir</option>
-                    <option value="History">History</option>
-                    <option value="Kids">Kids</option>
-                    <option value="Shorts">Shorts</option>
-                    <option value="General">General</option>
-                  </select>
-                </div>
-
-                {/* YouTube Playlist */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">YouTube Playlist (Optional)</label>
-                  <input type="text" name="youtubePlaylistId" value={programPlaylistInput} onChange={(e) => setProgramPlaylistInput(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="https://youtube.com/playlist?list=..." />
-                  <p className="text-xs text-gray-400 mt-1">Paste a YouTube playlist URL or Playlist ID. Used for YouTube sync metadata.</p>
-                </div>
-
-                {/* Language + Translation Group */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-sm">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Language</label>
-                    <select name="language" defaultValue={editingProgram?.language || 'ml'} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none">
-                      <option value="ml">Malayalam</option>
-                      <option value="en">English</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Translation Group ID (Optional)</label>
-                    <input type="text" name="translationGroupId" defaultValue={editingProgram?.translationGroupId || ''} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="e.g. group-minal-qalb" />
-                  </div>
-                </div>
-
-                {/* Published At */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Published Date</label>
-                  <input type="date" name="publishedAt" defaultValue={editingProgram?.publishedAt || new Date().toISOString().split('T')[0]} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" />
-                </div>
-
-                {/* Actions */}
-                <div className="pt-6 border-t border-gray-100 flex justify-end gap-4">
-                  <button type="button" onClick={() => setView("programs")} className="px-6 py-2 border border-gray-300 rounded-sm text-gray-700 font-semibold hover:bg-gray-50">Cancel</button>
-                  <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-8 py-2 rounded-sm font-bold hover:bg-[#0f4d38] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm">
-                    {isSubmitting ? "Saving..." : "Save Program"}
-                  </button>
-                </div>
-              </Form>
-            </div>
+          {/* CONTACT MESSAGES INBOX */}
+          {view === "contact-messages" && (
+            <ContactMessagesAdmin messages={contactMessages} />
           )}
 
-          {/* Spotlight Editor */}
-          {view === "spotlight" && (
-            <div>
-              <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">Spotlight / Hero</h1>
-                <p className="text-gray-500 mt-1">Configure the editorial hero shown at the top of the Videos page.</p>
-              </div>
-              <Form method="post" className="space-y-6 bg-white p-6 rounded-sm border border-gray-200 shadow-sm">
-                <input type="hidden" name="intent" value="saveSpotlight" />
-
-                {/* Hero Type */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">Spotlight Type</label>
-                  <div className="flex flex-wrap gap-3">
-                    {(['program', 'video', 'upcoming'] as const).map(type => (
-                      <label key={type} className="flex items-center gap-2 bg-gray-50 px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-100 capitalize">
-                        <input type="radio" name="heroType" value={type} defaultChecked={(spotlightSettings?.heroType || 'video') === type} onChange={e => setSpotlightHeroType(e.target.value)} className="accent-[#15664a]" />
-                        <span className="text-sm font-medium text-gray-800 capitalize">{type}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Program Reference */}
-                {spotlightHeroType === 'program' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Select Program</label>
-                    <select name="referenceId" defaultValue={spotlightSettings?.referenceId || ''} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none">
-                      <option value="">(none)</option>
-                      {programs.filter((p: any) => p.status === 'published').map((p: any) => (
-                        <option key={p.slug} value={p.slug}>{p.title} ({p.language === 'en' ? 'EN' : 'ML'})</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Video Reference */}
-                {spotlightHeroType === 'video' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Select Video</label>
-                    <select name="referenceId" defaultValue={spotlightSettings?.referenceId || ''} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none">
-                      <option value="">(none — auto-select latest)</option>
-                      {videos.filter((v: any) => v.status === 'published').slice(0, 50).map((v: any) => (
-                        <option key={v.slug} value={v.slug}>{v.title} ({v.language === 'en' ? 'EN' : 'ML'})</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Upcoming Fields */}
-                {spotlightHeroType === 'upcoming' && (
-                  <div className="space-y-4 p-4 bg-amber-50 border border-amber-200 rounded-sm">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Upcoming Title *</label>
-                      <input type="text" name="upcomingTitle" defaultValue={spotlightSettings?.upcomingTitle || ''} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-amber-400 outline-none" placeholder="e.g. New Series Coming Soon" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Expected Date</label>
-                      <input type="date" name="upcomingDate" defaultValue={spotlightSettings?.upcomingDate || ''} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-amber-400 outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
-                      <textarea name="upcomingDescription" defaultValue={spotlightSettings?.upcomingDescription || ''} rows={2} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-amber-400 outline-none" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Custom Banner */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Custom Banner Image URL (Optional)</label>
-                  <input type="text" name="customBanner" defaultValue={spotlightSettings?.customBanner || ''} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="https://..." />
-                </div>
-
-                <div className="pt-6 border-t border-gray-100 flex justify-end">
-                  <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-8 py-2 rounded-sm font-bold hover:bg-[#0f4d38] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm">
-                    {isSubmitting ? "Saving..." : "Save Spotlight"}
-                  </button>
-                </div>
-              </Form>
-            </div>
-          )}
-
-          {view === "profile" && (
-            <ProfileAdmin profileSettings={profileSettings} />
-          )}
-
-          {view === "homepage" && (
+          {/* HEADER SETTINGS */}
+          {view === "settings-header" && (
             <Form method="post">
-              <input type="hidden" name="intent" value="saveHomepage" />
+              <input type="hidden" name="intent" value="saveHeader" />
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Homepage Settings</h1>
-                  <p className="text-gray-500 mt-1">Manage the hero section and featured content of the Samastha Graph homepage.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Header &amp; Navigation</h1>
+                  <p className="text-xs text-gray-500 mt-1">Configure brand identity and navigation menu links.</p>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save Changes"}
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Header"}
                 </button>
               </div>
-              <HomepageAdmin homepageSettings={homepageSettings} articles={articles} videos={videos} />
+              <HeaderAdmin headerSettings={headerSettings} />
             </Form>
           )}
 
+          {/* HERO SETTINGS */}
+          {view === "settings-hero" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveHero" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Hero &amp; Banner Settings</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage main headline, description, and call to action.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Hero"}
+                </button>
+              </div>
+              <HeroAdmin heroSettings={heroSettings} videos={videos} articles={articles} />
+            </Form>
+          )}
+
+          {/* CORE PILLARS */}
+          {view === "settings-pillars" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="savePillars" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Core Pillars</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage organization focus areas and foundational values.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Pillars"}
+                </button>
+              </div>
+              <PillarsAdmin pillarsSettings={pillarsSettings} />
+            </Form>
+          )}
+
+          {/* LEADERSHIP */}
+          {view === "settings-leadership" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveLeadership" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Leadership &amp; Scholars</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage prominent scholars, roles, and portraits.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Leadership"}
+                </button>
+              </div>
+              <LeadershipAdmin leadershipSettings={leadershipSettings} />
+            </Form>
+          )}
+
+          {/* GLOBAL NETWORK */}
+          {view === "settings-global-network" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveGlobalNetwork" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Global Network</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage diaspora presence, map image, and regional branches.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Global Network"}
+                </button>
+              </div>
+              <GlobalNetworkAdmin globalNetworkSettings={globalNetworkSettings} />
+            </Form>
+          )}
+
+          {/* KEY HIGHLIGHTS */}
+          {view === "settings-highlights" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveHighlights" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Key Highlights</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage impact statistics, counters, and labels.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Highlights"}
+                </button>
+              </div>
+              <HighlightsAdmin highlightsSettings={highlightsSettings} />
+            </Form>
+          )}
+
+          {/* IDEOLOGY & FATWA */}
+          {view === "settings-fatwa" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveFatwa" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Ideology &amp; Fatwa Guidance</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage theological stance, banner, and recent fatwas.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Fatwa Settings"}
+                </button>
+              </div>
+              <FatwaAdmin fatwaSettings={fatwaSettings} />
+            </Form>
+          )}
+
+          {/* EDUCATION SETTINGS */}
+          {view === "settings-education" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveEducation" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Education Ecosystem</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage education board facts, syllabus, and universities.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Education"}
+                </button>
+              </div>
+              <EducationAdmin educationSettings={educationSettings} />
+            </Form>
+          )}
+
+          {/* GET INVOLVED / WHATSAPP */}
+          {view === "settings-get-involved" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveGetInvolved" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Get Involved &amp; WhatsApp Group</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage WhatsApp group link, Telegram, and volunteer program.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Community Settings"}
+                </button>
+              </div>
+              <GetInvolvedAdmin getInvolvedSettings={getInvolvedSettings} />
+            </Form>
+          )}
+
+          {/* MUSHAWARA MEMBERS */}
+          {view === "settings-mushawara" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveMushawara" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Supreme Mushawara Members</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage central council scholars and representatives.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Mushawara"}
+                </button>
+              </div>
+              <MushawaraAdmin mushawaraSettings={mushawaraSettings} />
+            </Form>
+          )}
+
+          {/* FOOTER SETTINGS */}
+          {view === "settings-footer" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveFooter" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Footer Settings</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage copyright statement, brand note, and link columns.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Footer"}
+                </button>
+              </div>
+              <FooterAdmin footerSettings={footerSettings} />
+            </Form>
+          )}
+
+          {/* ABOUT US SETTINGS */}
           {view === "settings-about" && (
             <Form method="post">
               <input type="hidden" name="intent" value="saveAbout" />
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">About Us Settings</h1>
-                  <p className="text-gray-500 mt-1">Manage the content of the About Us page.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">About Us Settings</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage hero, history story, mission, gallery, and CTA.</p>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save Changes"}
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save About Settings"}
                 </button>
               </div>
-              {aboutSettings ? (
-                <AboutAdmin aboutSettings={aboutSettings} />
-              ) : (
-                <div className="bg-white p-8 rounded-sm shadow-sm border border-gray-200 text-center text-gray-500">
-                  Unable to load About settings. Please refresh and try again.
-                </div>
-              )}
+              <AboutAdmin aboutSettings={aboutSettings} />
             </Form>
           )}
 
+          {/* CONTACT PAGE SETTINGS */}
           {view === "settings-contact" && (
             <Form method="post">
               <input type="hidden" name="intent" value="saveContact" />
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Contact Us Settings</h1>
-                  <p className="text-gray-500 mt-1">Manage the content of the Contact Us page.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Contact Us Settings</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage address, email, phone, and location information.</p>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save Changes"}
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Contact Settings"}
                 </button>
               </div>
-              {contactSettings ? (
-                <ContactAdmin contactSettings={contactSettings} />
-              ) : (
-                <div className="bg-white p-8 rounded-sm shadow-sm border border-gray-200 text-center text-gray-500">
-                  Unable to load Contact settings. Please refresh and try again.
-                </div>
-              )}
+              <ContactAdmin contactSettings={contactSettings} />
             </Form>
           )}
 
+          {/* SOCIAL PLATFORMS */}
           {view === "settings-social-platforms" && (
             <Form method="post">
               <input type="hidden" name="intent" value="saveSocialPlatforms" />
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Social Platforms</h1>
-                  <p className="text-gray-500 mt-1">Manage social media platforms and links.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Social Platforms</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage social media accounts and profile docks.</p>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save Changes"}
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Social Platforms"}
                 </button>
               </div>
-              {socialPlatformSettings ? (
-                <PlatformAdmin platformSettings={socialPlatformSettings} platformType="social" />
-              ) : (
-                <div className="bg-white p-8 rounded-sm shadow-sm border border-gray-200 text-center text-gray-500">
-                  Unable to load Social Platform settings. Please refresh and try again.
-                </div>
-              )}
+              <PlatformAdmin platformSettings={socialPlatformSettings} platformType="social" />
             </Form>
           )}
 
-          {view === "settings-podcast-platforms" && (
-            <Form method="post">
-              <input type="hidden" name="intent" value="savePodcastPlatforms" />
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Podcast Platforms</h1>
-                  <p className="text-gray-500 mt-1">Manage podcast platforms and links.</p>
-                </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-              {podcastPlatformSettings ? (
-                <PlatformAdmin platformSettings={podcastPlatformSettings} platformType="podcast" />
-              ) : (
-                <div className="bg-white p-8 rounded-sm shadow-sm border border-gray-200 text-center text-gray-500">
-                  Unable to load Podcast Platform settings. Please refresh and try again.
-                </div>
-              )}
-            </Form>
-          )}
-
+          {/* AUTHORS & SCHOLARS */}
           {view === "authors" && (
             <Form method="post">
               <input type="hidden" name="intent" value="saveAuthors" />
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Authors &amp; Scholars</h1>
-                  <p className="text-gray-500 mt-1">Manage writers, scholars, and contributors across Samastha Graph.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Authors &amp; Scholars</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage writers, scholars, and contributors.</p>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save All Authors"}
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save All Authors"}
                 </button>
               </div>
               <AuthorsAdmin authorsSettings={authorsSettings || { authors: [] }} />
             </Form>
           )}
 
+          {/* PROFILE HUB */}
+          {view === "profile" && (
+            <ProfileAdmin profileSettings={profileSettings} />
+          )}
+
+          {/* HOMEPAGE FEATURED */}
+          {view === "homepage" && (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveHomepage" />
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Featured Hero Overrides</h1>
+                  <p className="text-xs text-gray-500 mt-1">Configure featured video or article cards.</p>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save Overrides"}
+                </button>
+              </div>
+              <HomepageAdmin homepageSettings={homepageSettings} articles={articles} videos={videos} />
+            </Form>
+          )}
+
+          {/* PODCAST SHOWS & RSS */}
           {view === "settings-podcast-shows" && (
             <Form method="post">
               <input type="hidden" name="intent" value="savePodcastShows" />
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Podcast Shows & RSS Feeds</h1>
-                  <p className="text-gray-500 mt-1">Manage Spotify & Anchor RSS feeds, show titles, and artwork.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 font-heading">Podcast Shows &amp; RSS Feeds</h1>
+                  <p className="text-xs text-gray-500 mt-1">Manage Spotify &amp; Anchor RSS feeds, show artwork, and audio channels.</p>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="bg-[#15664a] text-white px-6 py-2.5 rounded-sm font-semibold hover:bg-[#0f4d38] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
-                  <Send size={18} /> {isSubmitting ? "Saving..." : "Save All Shows"}
+                <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-2 disabled:opacity-50">
+                  <Send size={14} /> {isSubmitting ? "Saving..." : "Save All Shows"}
                 </button>
               </div>
               <PodcastShowsAdmin podcastShowsSettings={podcastShowsSettings || { shows: [] }} />
             </Form>
           )}
 
-          {view === "overview" && (
-            <div className="space-y-8">
-              <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-800">Dashboard Hub</h1>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-sm shadow border border-gray-200">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><FileText size={24} /></div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">Total Articles</p>
-                      <h3 className="text-2xl font-bold text-gray-900">{articles.length}</h3>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-4 text-xs font-medium">
-                    <span className="text-green-600">{articles.filter((a: any) => a.status !== 'draft').length} Published</span>
-                    <span className="text-yellow-600">{articles.filter((a: any) => a.status === 'draft').length} Drafts</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-sm shadow border border-gray-200">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-red-50 text-red-600 rounded-lg"><Video size={24} /></div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">Total Videos</p>
-                      <h3 className="text-2xl font-bold text-gray-900">{videos.length}</h3>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-4 text-xs font-medium">
-                    <span className="text-green-600">{videos.filter((v: any) => v.status === 'published').length} Pub</span>
-                    <span className="text-purple-600">{videos.filter((v: any) => v.status === 'scheduled').length} Sched</span>
-                    <span className="text-yellow-600">{videos.filter((v: any) => v.status === 'draft').length} Draft</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-sm shadow border border-gray-200">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg"><Mic size={24} /></div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">Total Podcasts</p>
-                      <h3 className="text-2xl font-bold text-gray-900">{podcasts.length}</h3>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-sm shadow border border-gray-200 overflow-hidden">
-                <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                  <h3 className="text-lg font-bold text-gray-800">Recent Activity</h3>
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {allRecentActivity.map((item: any) => (
-                    <div key={`${item.type}-${item.slug}`} className="p-4 sm:px-6 hover:bg-gray-50 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-full ${item.type === 'article' ? 'bg-blue-100 text-blue-600' : item.type === 'video' ? 'bg-red-100 text-red-600' : 'bg-purple-100 text-purple-600'}`}>
-                          {item.type === 'article' ? <FileText size={16} /> : item.type === 'video' ? <Video size={16} /> : <Mic size={16} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{item.title}</p>
-                          <div className="flex gap-2 text-xs text-gray-500 mt-1">
-                            <span className="uppercase">{item.type}</span> • <span>{item.publishedAt}</span> • <StatusBadge status={item.status || 'published'} />
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        {item.type === 'article' && <button onClick={() => openArticleEditor(item)} className="text-[#15664a] hover:underline text-sm font-medium">Edit</button>}
-                        {item.type === 'video' && <button onClick={() => openVideoEditor(item)} className="text-[#15664a] hover:underline text-sm font-medium">Edit</button>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
+          {/* ARTICLES / VIDEOS / PODCASTS LIST VIEWS */}
           {(view === "articles" || view === "videos" || view === "podcasts") && (
-            <div className="bg-white rounded-sm shadow border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-xs border border-gray-200 overflow-hidden">
               {view === "videos" && (
-                <div className="flex border-b border-gray-200 bg-gray-50">
-                  <button onClick={() => setView("videos")} className="px-6 py-3 border-b-2 font-medium text-sm border-[#15664a] text-[#15664a]">All Videos</button>
-                  <button onClick={() => setView("programs")} className="px-6 py-3 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">Programs / Playlists</button>
+                <div className="flex border-b border-gray-200 bg-gray-50/50">
+                  <button onClick={() => setView("videos")} className="px-6 py-3 border-b-2 font-bold text-xs border-[#781B38] text-[#781B38]">All Videos</button>
+                  <button onClick={() => setView("programs")} className="px-6 py-3 border-b-2 border-transparent font-medium text-xs text-gray-500 hover:text-gray-700">Programs &amp; Playlists</button>
                 </div>
               )}
-              <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <h2 className="text-xl font-bold text-gray-800 capitalize">{view === "videos" ? "All Videos" : view}</h2>
-                <div className="flex gap-4 w-full sm:w-auto">
+              <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <h2 className="text-lg font-bold text-gray-900 capitalize font-heading">{view === "videos" ? "All Videos" : view}</h2>
+                <div className="flex gap-3 w-full sm:w-auto">
                   <div className="relative w-full sm:w-64">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       placeholder={`Search ${view}...`}
                       value={searchQuery}
                       onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none text-sm"
+                      className="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs outline-none focus:ring-1 focus:ring-[#781B38]"
                     />
                   </div>
                   <select
                     value={langFilter}
                     onChange={(e) => { setLangFilter(e.target.value as any); setPage(1); }}
-                    className="px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none text-sm bg-white"
+                    className="px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs outline-none"
                   >
-                    <option value="all">All Languages</option>
-                    <option value="ml">Malayalam (Default)</option>
-                    <option value="en">English</option>
+                    <option value="all">All</option>
+                    <option value="ml">ML</option>
+                    <option value="en">EN</option>
                   </select>
                   <button
                     onClick={() => view === "articles" ? openArticleEditor() : view === "videos" ? openVideoEditor() : openPodcastEditor()}
-                    className="flex items-center gap-2 bg-[#15664a] text-white px-4 py-2 rounded-sm text-sm font-medium hover:bg-[#0f4d38] whitespace-nowrap"
+                    className="flex items-center gap-1.5 bg-[#781B38] hover:bg-[#5E152C] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
                   >
-                    <Plus size={16} /> New
+                    <Plus size={14} /> New
                   </button>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-100 text-xs">
+                  <thead className="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left">#</th>
+                      <th className="px-6 py-3 text-left">Title</th>
+                      <th className="px-6 py-3 text-left">Status</th>
+                      <th className="px-6 py-3 text-left">Date</th>
+                      <th className="px-6 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {paginatedList.length === 0 ? (
-                      <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No records found.</td></tr>
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">No records found.</td></tr>
                     ) : paginatedList.map((item: any, idx: number) => (
-                      <tr key={item.slug} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(page - 1) * itemsPerPage + idx + 1}</td>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900 truncate max-w-[200px] sm:max-w-[300px]">{item.title}</div>
-                          <div className="text-xs text-gray-500 truncate max-w-[200px]">{item.slug}</div>
+                      <tr key={item.slug} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-6 py-3.5 text-gray-400">{(page - 1) * itemsPerPage + idx + 1}</td>
+                        <td className="px-6 py-3.5">
+                          <div className="font-semibold text-gray-900 truncate max-w-[280px]">{item.title}</div>
+                          <div className="text-[11px] text-gray-400 truncate max-w-[200px]">{item.slug}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <StatusBadge status={item.status || 'published'} />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {item.publishedAt}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-3">
-                            <button onClick={() => handleMove(item, view === "articles" ? "article" : view === "videos" ? "video" : "podcast")} className="text-gray-500 hover:text-[#c8a136]" title="Move / Change Date"><CalendarIcon size={18} /></button>
-                            <Link to={`/${view}/${item.slug}`} target="_blank" className="text-gray-500 hover:text-blue-600" title="View Live"><Eye size={18} /></Link>
-                            <button onClick={() => view === "articles" ? openArticleEditor(item) : view === "videos" ? openVideoEditor(item) : openPodcastEditor(item)} className="text-gray-500 hover:text-[#15664a]" title="Edit"><Edit size={18} /></button>
-                            <button onClick={() => handleDelete(item.slug, view === "articles" ? "article" : view === "videos" ? "video" : "podcast")} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={18} /></button>
+                        <td className="px-6 py-3.5"><StatusBadge status={item.status || 'published'} /></td>
+                        <td className="px-6 py-3.5 text-gray-500">{item.publishedAt}</td>
+                        <td className="px-6 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link to={`/${view}/${item.slug}`} target="_blank" className="text-gray-400 hover:text-blue-600 p-1" title="View"><Eye size={15} /></Link>
+                            <button onClick={() => view === "articles" ? openArticleEditor(item) : view === "videos" ? openVideoEditor(item) : openPodcastEditor(item)} className="text-gray-400 hover:text-[#781B38] p-1" title="Edit"><Edit size={15} /></button>
+                            <button onClick={() => handleDelete(item.slug, view === "articles" ? "article" : view === "videos" ? "video" : "podcast")} className="text-gray-400 hover:text-red-600 p-1" title="Delete"><Trash2 size={15} /></button>
                           </div>
                         </td>
                       </tr>
@@ -2322,301 +1749,190 @@ ${item.body}`;
               </div>
 
               {totalPages > 1 && (
-                <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Page {page} of {totalPages}</span>
-                  <div className="flex gap-2">
-                    <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border rounded text-sm disabled:opacity-50">Prev</button>
-                    <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border rounded text-sm disabled:opacity-50">Next</button>
+                <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-600">
+                  <span>Page {page} of {totalPages}</span>
+                  <div className="flex gap-1.5">
+                    <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-2.5 py-1 border rounded-md disabled:opacity-40">Prev</button>
+                    <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-2.5 py-1 border rounded-md disabled:opacity-40">Next</button>
                   </div>
                 </div>
               )}
             </div>
           )}
 
+          {/* EDITORS (Articles, Videos, Podcasts) */}
           {(view === "newArticle" || view === "editArticle" || view === "newVideo" || view === "editVideo" || view === "newPodcast" || view === "editPodcast") && (
-            <div className="bg-white rounded-sm shadow border border-gray-200 p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-8 border-b pb-4">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  {view === "newArticle" && "Create New Article"}
-                  {view === "editArticle" && "Edit Article"}
-                  {view === "newVideo" && "Create New Video"}
-                  {view === "editVideo" && "Edit Video"}
-                  {view === "newPodcast" && "Create New Podcast"}
-                  {view === "editPodcast" && "Edit Podcast"}
+            <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                <h2 className="text-xl font-bold text-gray-900 font-heading">
+                  {view.includes("Article") ? (view === "newArticle" ? "Create Article" : "Edit Article") :
+                   view.includes("Video") ? (view === "newVideo" ? "Create Video" : "Edit Video") :
+                   (view === "newPodcast" ? "Create Podcast" : "Edit Podcast")}
                 </h2>
-                <button type="button" onClick={() => setView("overview")} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+                <button type="button" onClick={() => setView(view.includes("Article") ? "articles" : view.includes("Video") ? "videos" : "podcasts")} className="text-gray-400 hover:text-gray-700"><X size={20} /></button>
               </div>
 
-              <Form method="post" className="space-y-8">
+              <Form method="post" className="space-y-6">
                 <input type="hidden" name="originalSlug" value={editingItem?.slug || ""} />
                 <input type="hidden" name="intent" value={view.includes("Video") ? "saveVideo" : view.includes("Podcast") ? "savePodcast" : "saveArticle"} />
                 <input type="hidden" name="body" value={editorContent} />
                 <input type="hidden" name="publishedAt" value={editingItem?.publishedAt || ""} />
 
-
                 {view.includes("Podcast") && (
-                  <div className="space-y-4 bg-purple-50/50 p-6 rounded-sm border border-purple-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4 bg-purple-50/50 p-5 rounded-xl border border-purple-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Audio URL *</label>
-                        <input
-                          type="text"
-                          name="audioUrl"
-                          defaultValue={editingItem?.audioUrl}
-                          placeholder="https://.../audio.mp3"
-                          required={view.includes("Podcast")}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                        />
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Audio URL *</label>
+                        <input type="text" name="audioUrl" defaultValue={editingItem?.audioUrl} placeholder="https://.../audio.mp3" required={view.includes("Podcast")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Duration (e.g. 45:30)</label>
-                        <input
-                          type="text"
-                          name="duration"
-                          defaultValue={editingItem?.duration}
-                          placeholder="00:00"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                        />
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Duration (e.g. 45:30)</label>
+                        <input type="text" name="duration" defaultValue={editingItem?.duration} placeholder="00:00" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Series Name</label>
-                        <input
-                          type="text"
-                          name="series"
-                          defaultValue={editingItem?.series}
-                          placeholder="e.g. The Weekly Tafsir"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Episode Number</label>
-                        <input
-                          type="number"
-                          name="episodeNumber"
-                          defaultValue={editingItem?.episodeNumber || 0}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Custom Artwork URL (Optional)</label>
-                      <input
-                        type="text"
-                        name="customThumbnail"
-                        defaultValue={editingItem?.customThumbnail}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-purple-500 outline-none text-sm"
-                        placeholder="https://..."
-                      />
                     </div>
                   </div>
                 )}
-
 
                 {view.includes("Video") && (
-                  <input type="hidden" name="youtubeId" value={youtubePreviewId} />
+                  <div className="space-y-4 bg-red-50/50 p-5 rounded-xl border border-red-100">
+                    <input type="hidden" name="youtubeId" value={youtubePreviewId} />
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">YouTube URL *</label>
+                      <input type="text" value={youtubeInput} onChange={(e) => setYoutubeInput(e.target.value)} placeholder="https://youtube.com/watch?v=..." required={view.includes("Video")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                    </div>
+                  </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 p-4 rounded-sm border border-gray-200 gap-4">
-                  <span className="font-semibold text-gray-700">Visibility Status</span>
-                  <div className="flex flex-wrap gap-3">
-                    <label className="flex items-center gap-2 bg-white px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-50">
-                      <input type="radio" name="status" value="published" defaultChecked={editingItem?.status === 'published' || !editingItem?.status} className="accent-[#15664a]" />
-                      <span className="text-sm font-medium text-gray-800">Published</span>
-                    </label>
-                    <label className="flex items-center gap-2 bg-white px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-50">
-                      <input type="radio" name="status" value="scheduled" defaultChecked={editingItem?.status === 'scheduled'} className="accent-[#15664a]" />
-                      <span className="text-sm font-medium text-gray-800">Scheduled (Upcoming)</span>
-                    </label>
-                    <label className="flex items-center gap-2 bg-white px-4 py-2 border rounded-sm cursor-pointer hover:bg-gray-50">
-                      <input type="radio" name="status" value="draft" defaultChecked={editingItem?.status === 'draft'} className="accent-[#15664a]" />
-                      <span className="text-sm font-medium text-gray-800">Draft (Hidden)</span>
-                    </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
+                    <input type="text" name="title" defaultValue={editingItem?.title} required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">URL Slug (Optional)</label>
+                    <input type="text" name="newSlug" defaultValue={editingItem?.slug || ""} placeholder="e.g. my-slug" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
-                    <input type="text" name="title" defaultValue={editingItem?.title} required className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Advanced Title (HTML/Styling allowed)</label>
-                    <input type="text" name="advancedTitle" defaultValue={editingItem?.advancedTitle || editingItem?.title} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder='<span style="color:red">Title</span>' />
-                  </div>
-                </div>
-
-                <div className="mt-6 mb-6">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">URL Slug (Optional: Leave blank to auto-generate)</label>
-                  <input type="text" name="newSlug" defaultValue={editingItem?.slug || ""} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="e.g. my-custom-article-slug" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-6 p-4 bg-gray-50 border border-gray-200 rounded-sm">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Language</label>
-                    <input type="hidden" name="originalLanguage" value={editingItem?.language || ""} />
-                    <select name="language" defaultValue={editingItem?.language || "ml"} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Language</label>
+                    <select name="language" defaultValue={editingItem?.language || "ml"} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                       <option value="ml">Malayalam</option>
                       <option value="en">English</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Translation Group ID (Optional)</label>
-                    <input type="text" name="translationGroupId" defaultValue={editingItem?.translationGroupId || ""} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="e.g. group-123" />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Category</label>
+                    <input type="text" name="category" defaultValue={editingItem?.category || "News"} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Author</label>
+                    <input type="text" name="author" defaultValue={editingItem?.author || "Samastha Graph"} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-malayalam" />
                   </div>
                 </div>
 
-                {view.includes("Video") && (
-                  <div className="space-y-4 bg-red-50/50 p-6 rounded-sm border border-red-100">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">YouTube URL *</label>
-                      <input
-                        type="text"
-                        value={youtubeInput}
-                        onChange={(e) => setYoutubeInput(e.target.value)}
-                        placeholder="https://youtube.com/watch?v=..."
-                        required={view.includes("Video")}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-red-500 outline-none"
-                      />
-                    </div>
-                    {youtubePreviewId && (
-                      <div className="mt-4 flex flex-col sm:flex-row gap-6 items-start">
-                        <div className="w-full sm:w-1/2 aspect-video bg-black rounded-lg overflow-hidden shadow-lg border-2 border-red-100">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${youtubePreviewId}`}
-                            title="YouTube preview"
-                            className="w-full h-full"
-                            frameBorder="0"
-                            allowFullScreen
-                          ></iframe>
-                        </div>
-                        <div className="w-full sm:w-1/2 space-y-2">
-                          <p className="text-sm font-semibold text-green-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div> Valid YouTube ID: ${youtubePreviewId}</p>
-                          <p className="text-xs text-gray-500">Thumbnail automatically extracted.</p>
-                          <label className="block text-sm font-semibold text-gray-700 mt-4 mb-2">Custom Thumbnail Override URL (Optional)</label>
-                          <input type="text" name="customThumbnail" defaultValue={editingItem?.customThumbnail} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="Leave blank to use YouTube thumbnail" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
-                    {view.includes("Article") ? (
-                      <select name="category" defaultValue={editingItem?.category || "News"} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none bg-white">
-                        <option value="News">News</option>
-                        <option value="Articles">Articles</option>
-                        <option value="Updates">Updates</option>
-                      </select>
-                    ) : (
-                      <select name="category" defaultValue={editingItem?.category || "General"} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-red-500 outline-none bg-white">
-                        <option value="Tafsir">Tafsir</option>
-                        <option value="History">History</option>
-                        <option value="Kids">Kids</option>
-                        <option value="Shorts">Shorts</option>
-                        <option value="General">General</option>
-                      </select>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Author</label>
-                    <input
-                      type="text"
-                      name="author"
-                      list="authors-options-list"
-                      defaultValue={editingItem?.author || "Samastha Graph Editorial"}
-                      placeholder="Type or select author..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none bg-white font-malayalam text-sm"
-                    />
-                    <datalist id="authors-options-list">
-                      {(authorsSettings?.authors || []).map((a: any) => (
-                        <option key={a.id} value={a.nameMl || a.name}>
-                          {a.name} {a.role ? `(${a.role})` : ''}
-                        </option>
-                      ))}
-                      <option value="Samastha Graph Editorial">Samastha Graph Editorial</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Guest Writer">Guest Writer</option>
-                    </datalist>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-[11px] text-gray-400">Select or type custom name</span>
-                      <button type="button" onClick={() => setView("authors")} className="text-[11px] text-[#15664a] font-semibold hover:underline">
-                        + Manage Authors
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Theme Preset</label>
-                    <select name="themePreset" defaultValue={editingItem?.themePreset || "theme-malayalam-standard"} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none bg-white">
-                      <option value="theme-malayalam-standard">Standard Malayalam</option>
-                      <option value="theme-cinematic">Cinematic Editorial</option>
-                      <option value="theme-english-minimal">Minimalist English</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Program Assignment */}
-                {view.includes("Video") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 border border-blue-100 rounded-sm">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Program / Series (Optional)</label>
-                      <select name="programId" defaultValue={editingItem?.programId || ''} className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none">
-                        <option value="">(Standalone video — no program)</option>
-                        {programs.map((p: any) => (
-                          <option key={p.slug} value={p.slug}>{p.title} ({p.language === 'en' ? 'EN' : 'ML'})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Episode Number (Optional)</label>
-                      <input type="number" name="episodeNumber" min="1" defaultValue={editingItem?.episodeNumber || ''} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="e.g. 1" />
-                      <p className="text-xs text-gray-400 mt-1">Leave blank for standalone videos or unnumbered episodes.</p>
-                    </div>
-                  </div>
-                )}
-
                 {view.includes("Article") && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image URL</label>
-                    <input type="text" name="coverImage" defaultValue={editingItem?.coverImage} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="https://..." />
-                  </div>
-                )}
-
-                {view.includes("Article") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">SEO Title (Optional)</label>
-                      <input type="text" name="seoTitle" defaultValue={editingItem?.seoTitle} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">SEO Description (Optional)</label>
-                      <input type="text" name="seoDescription" defaultValue={editingItem?.seoDescription} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Cover Image URL</label>
+                    <input type="text" name="coverImage" defaultValue={editingItem?.coverImage} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="https://..." />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{view.includes("Article") ? "Excerpt (Short Summary) *" : "Short Description (Optional)"}</label>
-                  <textarea name="excerpt" defaultValue={editingItem?.excerpt} rows={2} required={view.includes("Article")} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none"></textarea>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">{view.includes("Article") ? "Excerpt *" : "Short Description"}</label>
+                  <textarea name="excerpt" defaultValue={editingItem?.excerpt} rows={2} required={view.includes("Article")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{view.includes("Video") ? "Video Notes / Full Description (Rich Text)" : view.includes("Podcast") ? "Podcast Description (Rich Text) *" : "Article Body (Rich Text) *"}</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Body Content</label>
                   <RichTextEditor content={editorContent} onChange={setEditorContent} />
                 </div>
 
-                <div className="pt-6 border-t border-gray-100 flex justify-end gap-4">
-                  <button type="button" onClick={() => setView("overview")} className="px-6 py-2 border border-gray-300 rounded-sm text-gray-700 font-semibold hover:bg-gray-50 transition-colors">Cancel</button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-[#15664a] text-white px-8 py-2 rounded-sm font-bold tracking-wide hover:bg-[#0f4d38] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-                  >
-                    {isSubmitting ? "Saving..." : `Save ${view.includes("Video") ? "Video" : view.includes("Podcast") ? "Podcast" : "Article"}`}
+                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                  <button type="button" onClick={() => setView(view.includes("Article") ? "articles" : view.includes("Video") ? "videos" : "podcasts")} className="px-5 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-7 py-2 rounded-xl text-xs font-bold transition-colors disabled:opacity-50">
+                    {isSubmitting ? "Saving..." : "Save Content"}
                   </button>
+                </div>
+              </Form>
+            </div>
+          )}
+
+          {/* PROGRAMS VIEW */}
+          {view === "programs" && (
+            <div className="space-y-6">
+              <div className="flex border-b border-gray-200 bg-gray-50/50 rounded-t-xl overflow-hidden">
+                <button onClick={() => setView("videos")} className="px-6 py-3 border-b-2 border-transparent font-medium text-xs text-gray-500 hover:text-gray-700">All Videos</button>
+                <button onClick={() => setView("programs")} className="px-6 py-3 border-b-2 font-bold text-xs border-[#781B38] text-[#781B38]">Programs &amp; Playlists</button>
+              </div>
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-gray-900 font-heading">Programs &amp; Playlists</h1>
+                <button onClick={() => openProgramEditor()} className="flex items-center gap-1.5 bg-[#781B38] hover:bg-[#5E152C] text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors">
+                  <Plus size={14} /> Create Program
+                </button>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="text-left px-6 py-3">Title</th>
+                      <th className="text-left px-6 py-3">Category</th>
+                      <th className="text-left px-6 py-3">Language</th>
+                      <th className="text-right px-6 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {programs.map((p: any) => (
+                      <tr key={p.slug} className="hover:bg-gray-50/70">
+                        <td className="px-6 py-3 font-semibold text-gray-900">{p.title}</td>
+                        <td className="px-6 py-3 text-gray-600">{p.category || 'General'}</td>
+                        <td className="px-6 py-3 uppercase">{p.language || 'ml'}</td>
+                        <td className="px-6 py-3 text-right">
+                          <button onClick={() => openProgramEditor(p)} className="p-1 text-gray-400 hover:text-[#781B38]"><Edit size={15} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* EDIT PROGRAM */}
+          {(view === "newProgram" || view === "editProgram") && (
+            <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                <h2 className="text-xl font-bold text-gray-900 font-heading">{view === "newProgram" ? "Create Program" : "Edit Program"}</h2>
+                <button type="button" onClick={() => setView("programs")} className="text-gray-400 hover:text-gray-700"><X size={20} /></button>
+              </div>
+              <Form method="post" className="space-y-4">
+                <input type="hidden" name="intent" value="saveProgram" />
+                <input type="hidden" name="originalSlug" value={editingProgram?.slug || ""} />
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
+                  <input type="text" name="title" defaultValue={editingProgram?.title} required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                  <textarea name="description" defaultValue={editingProgram?.description} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Category</label>
+                    <input type="text" name="category" defaultValue={editingProgram?.category || 'General'} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Language</label>
+                    <select name="language" defaultValue={editingProgram?.language || 'ml'} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                      <option value="ml">Malayalam</option>
+                      <option value="en">English</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                  <button type="button" onClick={() => setView("programs")} className="px-5 py-2 border border-gray-300 rounded-xl text-xs font-semibold">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="bg-[#781B38] hover:bg-[#5E152C] text-white px-7 py-2 rounded-xl text-xs font-bold disabled:opacity-50">Save Program</button>
                 </div>
               </Form>
             </div>

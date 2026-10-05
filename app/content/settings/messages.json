@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Abdullah K.",
+    "email": "abdullah@example.com",
+    "phone": "+91 98470 12345",
+    "subject": "Inquiry regarding Madrasa online curriculum",
+    "message": "Assalamu Alaikum, is there an English medium syllabus book download available for overseas students?",
+    "status": "unread",
+    "createdAt": "2026-10-04T11:30:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Muhammed Rashid",
+    "email": "rashid.m@example.com",
+    "phone": "+971 50 1234567",
+    "subject": "Dubai Regional Committee Coordination",
+    "message": "We would like to broadcast the upcoming centenary conference live via our Dubai center community screen.",
+    "status": "read",
+    "createdAt": "2026-10-02T14:15:00Z"
+  }
+]
