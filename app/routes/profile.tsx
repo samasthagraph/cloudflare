@@ -10,7 +10,7 @@ import { OptimizedImage } from "~/components/OptimizedImage";
 export const meta: MetaFunction = ({ data, location }) => {
   const typedData = data as any;
   const title = `${typedData?.profile?.identity?.name || 'Samastha Graph'} | Profile Hub`;
-  const description = typedData?.profile?.identity?.biography || "Explore the universe of knowledge.";
+  const description = typedData?.profile?.identity?.biography || "THE ILLUMINATED COSMOS OF KNOWLEDGE.";
   const url = `https://samasthagraph.pages.dev${location.pathname}`;
   return [
     { title },
@@ -32,7 +32,7 @@ export const loader = async ({ context }: any) => {
     links: [],
     featuredContent: { showLatestVideo: false, showLatestPodcast: false, showLatestArticle: false }
   };
-  
+
   let latestVideo = null;
   let latestPodcast = null;
   let latestArticle = null;
@@ -91,7 +91,7 @@ export const loader = async ({ context }: any) => {
 const getIcon = (name: string, fallback: any = LinkIcon) => {
   if (!name) return fallback;
   const lowerName = name.trim().toLowerCase();
-  
+
   const iconMap: Record<string, any> = {
     'youtube': FaIcons.FaYoutube,
     'instagram': FaIcons.FaInstagram,
@@ -132,7 +132,7 @@ export default function ProfileHub() {
           text: profile?.identity?.subtitle || 'Explore our digital identity',
           url: url,
         });
-      } catch (err) {}
+      } catch (err) { }
     } else {
       navigator.clipboard.writeText(url);
       setCopied(true);
@@ -148,7 +148,7 @@ export default function ProfileHub() {
 
   return (
     <div className="min-h-screen bg-[#faf9f6] text-[#1a1a1a] font-sans selection:bg-[#15664a]/20 relative overflow-x-hidden flex flex-col">
-      
+
       {/* Refined Background Texture & Glow */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-0 w-full lg:w-[60%] h-[80vh] bg-gradient-to-br from-[#15664a]/[0.04] to-transparent rounded-br-[100%]"></div>
@@ -157,30 +157,30 @@ export default function ProfileHub() {
       </div>
 
       <main className="flex-grow w-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-10 lg:py-20 flex flex-col lg:flex-row gap-12 lg:gap-24 relative z-10">
-        
+
         {/* Left Column: Brand Hero (Sticky on Desktop) */}
         <div className="w-full lg:w-5/12 flex flex-col lg:sticky lg:top-24 self-start animate-[fade-in_0.8s_ease-out_forwards]">
           <div className="w-full flex flex-col items-center lg:items-start text-center lg:text-left">
-            
+
             <div className="w-28 h-28 md:w-32 md:h-32 rounded-[2rem] overflow-hidden mb-8 bg-gradient-to-br from-[#15664a] to-[#0f4d38] border-[4px] border-white shadow-[0_10px_40px_rgba(21,102,74,0.15)] relative group flex-shrink-0">
-               {identity.logo ? (
-                 <OptimizedImage src={identity.logo} alt={identity.name} width={512} height={512} priority={true} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center text-white text-4xl font-heading font-bold">
-                   {identity.name ? identity.name.charAt(0) : 'S'}
-                 </div>
-               )}
+              {identity.logo ? (
+                <OptimizedImage src={identity.logo} alt={identity.name} width={512} height={512} priority={true} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-4xl font-heading font-bold">
+                  {identity.name ? identity.name.charAt(0) : 'S'}
+                </div>
+              )}
             </div>
-            
+
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#15664a]/5 border border-[#15664a]/10 rounded-full text-[#15664a] text-xs font-bold tracking-wide uppercase mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#15664a] animate-[pulse_2s_infinite]"></span>
               Digital Media Network
             </div>
-            
+
             <h1 className="font-heading font-bold text-3xl md:text-4xl lg:text-5xl text-[#1a1a1a] mb-3 tracking-tight">
               {identity.name}
             </h1>
-            
+
             {identity.subtitle && (
               <p className="font-sans text-[#b8975a] font-semibold text-lg md:text-xl mb-5">
                 {identity.subtitle}
@@ -194,7 +194,7 @@ export default function ProfileHub() {
             )}
 
             <div className="mt-8">
-              <button 
+              <button
                 onClick={handleShare}
                 className="flex items-center justify-center lg:justify-start gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:shadow hover:border-gray-300 transition-all active:scale-95"
                 aria-label="Share Profile"
@@ -208,7 +208,7 @@ export default function ProfileHub() {
 
         {/* Right Column: Links & Content */}
         <div className="w-full lg:w-7/12 flex flex-col gap-12 pb-10 animate-[fade-in_1s_ease-out_forwards]">
-          
+
           {/* Featured CTA Removed as per instructions */}
 
           {/* Featured Latest Media (if any) */}
@@ -216,7 +216,7 @@ export default function ProfileHub() {
             <div className="space-y-4 hidden lg:block">
               <h2 className="font-heading font-bold text-[13px] text-gray-400 uppercase tracking-wider ml-2">Latest Releases</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
+
                 {latestVideo && (
                   <Link to={`/videos/${latestVideo.slug}`} className="block w-full bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 group hover:-translate-y-1">
                     <div className="relative aspect-video bg-gray-100 overflow-hidden">
@@ -312,8 +312,8 @@ export default function ProfileHub() {
                 {podcastPlatforms.map((platform: any, idx: number) => {
                   const Icon = getIcon(platform.icon, PlayCircle);
                   return (
-                    <a key={platform.id || idx} href={platform.url} target="_blank" rel="noopener noreferrer" 
-                       className="group flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-1">
+                    <a key={platform.id || idx} href={platform.url} target="_blank" rel="noopener noreferrer"
+                      className="group flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-1">
                       <div className="w-10 h-10 flex-shrink-0 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 group-hover:bg-gray-100 group-hover:text-[#1a1a1a] transition-colors">
                         <Icon size={18} />
                       </div>
@@ -335,9 +335,9 @@ export default function ProfileHub() {
                 {socialPlatforms.map((platform: any, idx: number) => {
                   const Icon = getIcon(platform.icon, LinkIcon);
                   return (
-                    <a key={platform.id || idx} href={platform.url} target="_blank" rel="noopener noreferrer" 
-                       className="group flex items-center justify-center w-14 h-14 bg-white rounded-[1.25rem] border border-gray-100 shadow-sm hover:shadow-md hover:border-[#b8975a]/30 transition-all duration-300 hover:-translate-y-1"
-                       aria-label={platform.name}>
+                    <a key={platform.id || idx} href={platform.url} target="_blank" rel="noopener noreferrer"
+                      className="group flex items-center justify-center w-14 h-14 bg-white rounded-[1.25rem] border border-gray-100 shadow-sm hover:shadow-md hover:border-[#b8975a]/30 transition-all duration-300 hover:-translate-y-1"
+                      aria-label={platform.name}>
                       <Icon size={22} className="text-gray-500 group-hover:text-[#b8975a] transition-colors" />
                     </a>
                   );
