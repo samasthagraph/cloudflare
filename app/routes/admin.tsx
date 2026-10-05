@@ -20,7 +20,8 @@ import {
   Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Heading1, Heading2, Heading3, Heading4, Strikethrough, Minus, User, Share2,
   ExternalLink, Radio, Rss, PanelTop, PanelBottom, Sparkles, Users, Headphones,
-  UserCircle, PhoneCall, Info, ArrowRight, Layers, Box, CheckCircle2, MessageSquare
+  UserCircle, PhoneCall, Info, ArrowRight, Layers, Box, CheckCircle2, MessageSquare,
+  Layout
 } from 'lucide-react';
 import { getSessionStorage } from "../sessions.server";
 import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId } from "../utils/youtube";
