@@ -2,12 +2,54 @@
   "logo": "/Logo_white.png",
   "brandName": "Samastha Graph",
   "navLinks": [
-    { "id": "home", "labelMl": "Home", "labelEn": "Home", "url": "/", "active": true, "order": 1 },
-    { "id": "videos", "labelMl": "Videos", "labelEn": "Videos", "url": "/videos", "active": true, "order": 2 },
-    { "id": "podcasts", "labelMl": "Podcasts", "labelEn": "Podcasts", "url": "/podcasts", "active": true, "order": 3 },
-    { "id": "articles", "labelMl": "Articles", "labelEn": "Articles", "url": "/articles", "active": true, "order": 4 },
-    { "id": "about", "labelMl": "About", "labelEn": "About", "url": "/about", "active": true, "order": 5 },
-    { "id": "contact", "labelMl": "Contact", "labelEn": "Contact", "url": "/contact", "active": true, "order": 6 }
+    {
+      "id": "home",
+      "labelMl": "Home",
+      "labelEn": "Home",
+      "url": "/",
+      "active": true,
+      "order": 1
+    },
+    {
+      "id": "videos",
+      "labelMl": "Videos",
+      "labelEn": "Videos",
+      "url": "/videos",
+      "active": true,
+      "order": 2
+    },
+    {
+      "id": "podcasts",
+      "labelMl": "Podcasts",
+      "labelEn": "Podcasts",
+      "url": "/podcasts",
+      "active": true,
+      "order": 3
+    },
+    {
+      "id": "articles",
+      "labelMl": "Articles",
+      "labelEn": "Articles",
+      "url": "/articles",
+      "active": true,
+      "order": 4
+    },
+    {
+      "id": "about",
+      "labelMl": "About",
+      "labelEn": "About",
+      "url": "/about",
+      "active": false,
+      "order": 5
+    },
+    {
+      "id": "contact",
+      "labelMl": "Contact",
+      "labelEn": "Contact",
+      "url": "/contact",
+      "active": false,
+      "order": 6
+    }
   ],
   "showSearch": true,
   "showLanguageSwitcher": true

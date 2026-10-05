@@ -4,8 +4,8 @@ import { json, redirect, type MetaFunction } from "@remix-run/cloudflare";
 import { PlayCircle, Share2, Facebook, Twitter, MessageCircle, Clock, Tag, Search, MoreVertical, ThumbsUp, MessageSquare, ChevronDown, Calendar, ChevronUp, Check, Link as LinkIcon } from "lucide-react";
 import { OptimizedImage } from "~/components/OptimizedImage";
 import { isMalayalam } from "~/utils/language";
-import { extractYouTubeId, getYouTubeThumbnail } from "~/utils/youtube";
-import { getDbVideos } from "~/utils/db.server";
+import { extractYouTubeId, getYouTubeThumbnail, fetchLiveYouTubeVideos, fetchSingleYouTubeVideo } from "~/utils/youtube";
+import { getDbVideos, getDbPrograms } from "~/utils/db.server";
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {
@@ -59,6 +59,30 @@ export const loader = async ({ params, context, request }: any) => {
   const githubOwner = env.GITHUB_OWNER || "samasthagraph";
   const githubRepo = env.GITHUB_REPO || "cloudflare";
 
+  const [dbVideos, dbPrograms] = await Promise.all([
+    getDbVideos(env?.DB),
+    getDbPrograms(env?.DB)
+  ]);
+
+  // Load programs
+  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
+  const programMap = new Map<string, any>();
+  staticPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+  dbPrograms.forEach((p: any) => { if (p.slug) programMap.set(p.slug, p); });
+  const allPrograms = Array.from(programMap.values());
+
+  // Fetch live YouTube playlist videos
+  let liveVideos: any[] = [];
+  try {
+    liveVideos = await fetchLiveYouTubeVideos(allPrograms);
+  } catch (e) {
+    console.warn("Failed to fetch live YouTube playlist videos in video detail:", e);
+  }
+
   const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
   const mdxVideos = import.meta.glob("../content/videos/*.mdx", { query: '?raw', import: 'default', eager: true });
   
@@ -67,8 +91,10 @@ export const loader = async ({ params, context, request }: any) => {
     const s = path.split('/').pop()?.replace('.json', '');
     localMap.set(s, { slug: s, ...content });
   });
-  const dbVideos = await getDbVideos(env?.DB);
   dbVideos.forEach((v: any) => {
+    if (v.slug) localMap.set(v.slug, v);
+  });
+  liveVideos.forEach((v: any) => {
     if (v.slug) localMap.set(v.slug, v);
   });
 
@@ -117,6 +143,14 @@ export const loader = async ({ params, context, request }: any) => {
       );
     } catch (e) {
       console.error("GitHub Sync failed, using local files only:", e);
+    }
+  }
+
+  // If specific video slug still not found in map, attempt single video fetch
+  if (!localMap.has(slug)) {
+    const singleVideo = await fetchSingleYouTubeVideo(slug, allPrograms);
+    if (singleVideo) {
+      localMap.set(singleVideo.slug, singleVideo);
     }
   }
 

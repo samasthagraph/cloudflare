@@ -24,7 +24,7 @@ import {
   Layout
 } from 'lucide-react';
 import { getSessionStorage } from "../sessions.server";
-import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId } from "../utils/youtube";
+import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId, fetchLiveYouTubeVideos } from "../utils/youtube";
 import {
   getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting, getDbAuthors,
   saveDbArticle, saveDbVideo, saveDbPodcast, saveDbProgram, saveDbSetting, saveDbAuthors,
@@ -495,6 +495,20 @@ export const loader = async ({ request, context }: any) => {
     } catch (e) {
       console.warn("D1 loader merge warning:", e);
     }
+  }
+
+  try {
+    const liveYtVideos = await fetchLiveYouTubeVideos(programs);
+    if (liveYtVideos.length > 0) {
+      const map = new Map<string, any>();
+      videos.forEach((v: any) => map.set(v.slug, v));
+      liveYtVideos.forEach((v: any) => {
+        if (!map.has(v.slug)) map.set(v.slug, v);
+      });
+      videos = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+    }
+  } catch (e) {
+    console.warn("Live YouTube sync warning in admin loader:", e);
   }
 
   return json({

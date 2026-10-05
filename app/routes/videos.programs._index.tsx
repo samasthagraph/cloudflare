@@ -36,6 +36,14 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     .filter((p: any) => p.status === "published")
     .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
+  let liveVideos: any[] = [];
+  try {
+    const { fetchLiveYouTubeVideos } = await import("~/utils/youtube");
+    liveVideos = await fetchLiveYouTubeVideos(programs);
+  } catch (e) {
+    console.warn("Failed to fetch live YouTube playlist videos:", e);
+  }
+
   const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
   const staticVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
     slug: path.split("/").pop()?.replace(".json", ""),
@@ -45,6 +53,7 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   const videoMap = new Map<string, any>();
   staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
   dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
+  liveVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
 
   const videos = Array.from(videoMap.values()).filter((v: any) => v.status === "published");
 

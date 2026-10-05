@@ -167,3 +167,85 @@ export async function fetchYouTubePlaylistVideos(
     return [];
   }
 }
+
+export async function fetchLiveYouTubeVideos(programs: any[]): Promise<YouTubeFeedVideo[]> {
+  const allLiveVideos: YouTubeFeedVideo[] = [];
+  if (!programs || programs.length === 0) return allLiveVideos;
+
+  const validPrograms = programs.filter(p => p.youtubePlaylistId && p.status !== 'draft');
+  await Promise.all(
+    validPrograms.map(async (p) => {
+      try {
+        const feed = await fetchYouTubePlaylistVideos(
+          p.youtubePlaylistId,
+          p.slug,
+          p.category,
+          p.language || 'ml'
+        );
+        allLiveVideos.push(...feed);
+      } catch (err) {
+        console.warn(`Error loading playlist feed for program ${p.slug}:`, err);
+      }
+    })
+  );
+
+  return allLiveVideos;
+}
+
+export async function fetchSingleYouTubeVideo(
+  slugOrId: string,
+  programs: any[] = []
+): Promise<YouTubeFeedVideo | null> {
+  const youtubeId = extractYouTubeId(slugOrId.replace(/^youtube-/, ''));
+  if (!youtubeId) return null;
+
+  // 1. Try finding in program playlist feeds first
+  if (programs.length > 0) {
+    const liveVideos = await fetchLiveYouTubeVideos(programs);
+    const found = liveVideos.find(v => v.youtubeId === youtubeId || v.slug === slugOrId);
+    if (found) return found;
+  }
+
+  // 2. Fallback to YouTube oEmbed API for real-time video details
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtubeId}&format=json`);
+    if (res.ok) {
+      const data = await res.json() as any;
+      let episodeNumber: number | undefined;
+      const epMatch = (data.title || '').match(/(?:Episode|Ep|ഭാഗം)\s*[:#-]?\s*(\d+)/i);
+      if (epMatch && epMatch[1]) {
+        episodeNumber = parseInt(epMatch[1], 10);
+      }
+
+      return {
+        slug: `youtube-${youtubeId}`,
+        id: `youtube-${youtubeId}`,
+        youtubeId,
+        title: data.title || `YouTube Video ${youtubeId}`,
+        description: '',
+        publishedAt: new Date().toISOString().split('T')[0],
+        customThumbnail: data.thumbnail_url || `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`,
+        category: 'General',
+        status: 'published',
+        episodeNumber,
+        programId: '',
+        language: 'ml'
+      };
+    }
+  } catch (e) {
+    console.warn(`oEmbed fetch failed for ${youtubeId}:`, e);
+  }
+
+  return {
+    slug: `youtube-${youtubeId}`,
+    id: `youtube-${youtubeId}`,
+    youtubeId,
+    title: `YouTube Video ${youtubeId}`,
+    description: '',
+    publishedAt: new Date().toISOString().split('T')[0],
+    customThumbnail: `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`,
+    category: 'General',
+    status: 'published',
+    language: 'ml'
+  };
+}
