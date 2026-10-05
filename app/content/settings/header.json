@@ -1,44 +1,14 @@
 {
-  "brandName": "Samastha Graph",
   "logo": "/Logo_white.png",
+  "brandName": "Samastha Graph",
   "navLinks": [
-    {
-      "id": "1",
-      "label": "Home",
-      "labelMl": "പ്രധാനം",
-      "url": "/"
-    },
-    {
-      "id": "2",
-      "label": "Videos",
-      "labelMl": "വീഡിയോകൾ",
-      "url": "/videos"
-    },
-    {
-      "id": "3",
-      "label": "Podcasts",
-      "labelMl": "പോഡ്‌കാസ്റ്റുകൾ",
-      "url": "/podcasts"
-    },
-    {
-      "id": "4",
-      "label": "Articles",
-      "labelMl": "ലേഖനങ്ങൾ",
-      "url": "/articles"
-    },
-    {
-      "id": "5",
-      "label": "About",
-      "labelMl": "ഞങ്ങളെക്കുറിച്ച്",
-      "url": "/about"
-    },
-    {
-      "id": "6",
-      "label": "Contact",
-      "labelMl": "ബന്ധപ്പെടുക",
-      "url": "/contact"
-    }
+    { "id": "home", "labelMl": "Home", "labelEn": "Home", "url": "/", "active": true, "order": 1 },
+    { "id": "videos", "labelMl": "Videos", "labelEn": "Videos", "url": "/videos", "active": true, "order": 2 },
+    { "id": "podcasts", "labelMl": "Podcasts", "labelEn": "Podcasts", "url": "/podcasts", "active": true, "order": 3 },
+    { "id": "articles", "labelMl": "Articles", "labelEn": "Articles", "url": "/articles", "active": true, "order": 4 },
+    { "id": "about", "labelMl": "About", "labelEn": "About", "url": "/about", "active": true, "order": 5 },
+    { "id": "contact", "labelMl": "Contact", "labelEn": "Contact", "url": "/contact", "active": true, "order": 6 }
   ],
-  "enableSearch": true,
-  "enableLanguageSwitcher": true
+  "showSearch": true,
+  "showLanguageSwitcher": true
 }

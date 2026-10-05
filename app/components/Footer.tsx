@@ -10,6 +10,29 @@ export function Footer() {
   const rootData = useRouteLoaderData("root") as any;
   const socialPlatforms = rootData?.socialPlatforms?.platforms?.filter((p: any) => p.active) || [];
   const podcastPlatforms = rootData?.podcastPlatforms?.platforms?.filter((p: any) => p.active) || [];
+  const footerSettings = rootData?.footerSettings;
+
+  const logoSrc = footerSettings?.logo || "/Logo_white.png";
+  const brandTagline = footerSettings?.brandTagline || "The collective voice of Samastha Kerala Jam'iyyathul Ulama in the digital media realm.";
+  const copyrightText = footerSettings?.copyrightText || "Samastha Graph. All rights reserved.";
+
+  const contentLinks = footerSettings?.contentLinks || [
+    { label: "Latest Videos", url: "/videos" },
+    { label: "Audio Podcasts", url: "/podcasts" },
+    { label: "Articles", url: "/articles" }
+  ];
+
+  const organizationLinks = footerSettings?.organizationLinks || [
+    { label: "About Us", url: "/about" },
+    { label: "Contact Us", url: "/contact" }
+  ];
+
+  const resolveLink = (url: string) => {
+    if (url.startsWith('/') && !url.startsWith('/en') && location.pathname.startsWith('/en')) {
+      return `/en${url === '/' ? '' : url}`;
+    }
+    return url;
+  };
 
   const renderIcon = (iconName: string) => {
     if (!iconName) return <Globe size={18} />;
@@ -37,9 +60,10 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="space-y-6">
-            <Link to={prefix} className="block mb-6">
-              <img src="/Logo_white.png" alt="Samastha Graph Logo" className="h-20 w-auto object-contain object-left" />
+            <Link to={prefix} className="block mb-4">
+              <img src={logoSrc} alt="Samastha Graph Logo" className="h-20 w-auto object-contain object-left" />
             </Link>
+            <p className="text-xs text-white/70 leading-relaxed max-w-xs">{brandTagline}</p>
             {/* Premium Social Media Dock */}
             <div className="flex items-center gap-3">
               {socialPlatforms
@@ -62,16 +86,25 @@ export function Footer() {
           <div>
             <h4 className="font-heading font-semibold text-white mb-4">Content</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to={`${prefix}videos`.replace('//', '/')} className="hover:text-[#c8a136] transition-colors">Latest Videos</Link></li>
-              <li><Link to={`${prefix}podcasts`.replace('//', '/')} className="hover:text-[#c8a136] transition-colors">Audio Podcasts</Link></li>
-              <li><Link to={`${prefix}articles`.replace('//', '/')} className="hover:text-[#c8a136] transition-colors">Articles</Link></li>
+              {contentLinks.map((link: any, idx: number) => (
+                <li key={idx}>
+                  <Link to={resolveLink(link.url)} className="hover:text-[#c8a136] transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
             <h4 className="font-heading font-semibold text-white mb-4">Organization</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to={`${prefix}about`.replace('//', '/')} className="hover:text-[#c8a136] transition-colors">About Us</Link></li>
-              <li><Link to={`${prefix}contact`.replace('//', '/')} className="hover:text-[#c8a136] transition-colors">Contact Us</Link></li>
+              {organizationLinks.map((link: any, idx: number) => (
+                <li key={idx}>
+                  <Link to={resolveLink(link.url)} className="hover:text-[#c8a136] transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
@@ -88,7 +121,7 @@ export function Footer() {
           </div>
         </div>
         <div className="border-t border-brand-dark mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-brand-muted">
-          <p>&copy; {new Date().getFullYear()} Samastha Graph. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {copyrightText}</p>
         </div>
       </div>
     </footer>

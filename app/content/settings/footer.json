@@ -1,26 +1,16 @@
 {
-  "brandDescription": "Samastha Graph is the official digital broadcasting network representing the collective voice of Samastha Kerala Jam'iyyathul Ulama.",
-  "copyrightText": "© 2026 Samastha Graph. All rights reserved.",
-  "emergencyContact": "+91 494 2400000",
-  "officeLocation": "Samastha Centre, Francis Road, Kozhikode, Kerala 673003",
-  "showSocialDock": true,
-  "columns": [
-    {
-      "title": "Content",
-      "links": [
-        { "label": "Latest Videos", "url": "/videos" },
-        { "label": "Audio Podcasts", "url": "/podcasts" },
-        { "label": "Articles & News", "url": "/articles" },
-        { "label": "Programs & Series", "url": "/videos/programs" }
-      ]
-    },
-    {
-      "title": "Organization",
-      "links": [
-        { "label": "About Us", "url": "/about" },
-        { "label": "Authors & Scholars", "url": "/authors" },
-        { "label": "Contact Us", "url": "/contact" }
-      ]
-    }
+  "logo": "/Logo_white.png",
+  "brandTagline": "The collective voice of Samastha Kerala Jam'iyyathul Ulama in the digital media realm.",
+  "copyrightText": "Samastha Graph. All rights reserved.",
+  "contentLinks": [
+    { "label": "Latest Videos", "url": "/videos" },
+    { "label": "Audio Podcasts", "url": "/podcasts" },
+    { "label": "Articles & News", "url": "/articles" }
+  ],
+  "organizationLinks": [
+    { "label": "About Us", "url": "/about" },
+    { "label": "Contact Us", "url": "/contact" },
+    { "label": "Authors & Scholars", "url": "/authors" },
+    { "label": "Link Hub", "url": "/profile" }
   ]
 }

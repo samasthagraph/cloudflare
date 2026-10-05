@@ -11,9 +11,11 @@ import stylesheet from "~/tailwind.css?url";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 
-export const loader = async () => {
+export const loader = async ({ context }: any) => {
   let socialPlatforms = null;
   let podcastPlatforms = null;
+  let headerSettings = null;
+  let footerSettings = null;
 
   try {
     const socialFiles = import.meta.glob("./content/settings/social-platforms.json", { import: 'default', eager: true });
@@ -29,7 +31,40 @@ export const loader = async () => {
     console.error("Error loading podcast platforms in root loader:", e);
   }
 
-  return json({ socialPlatforms, podcastPlatforms });
+  try {
+    const headerFiles = import.meta.glob("./content/settings/header.json", { import: 'default', eager: true });
+    headerSettings = Object.values(headerFiles)[0] || null;
+  } catch (e) {
+    console.error("Error loading header settings in root loader:", e);
+  }
+
+  try {
+    const footerFiles = import.meta.glob("./content/settings/footer.json", { import: 'default', eager: true });
+    footerSettings = Object.values(footerFiles)[0] || null;
+  } catch (e) {
+    console.error("Error loading footer settings in root loader:", e);
+  }
+
+  const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
+  if (env?.DB) {
+    try {
+      const { getDbSetting } = await import("./utils/db.server");
+      const [dbSocial, dbPod, dbHeader, dbFooter] = await Promise.all([
+        getDbSetting(env.DB, "social-platforms").catch(() => null),
+        getDbSetting(env.DB, "podcast-platforms").catch(() => null),
+        getDbSetting(env.DB, "header").catch(() => null),
+        getDbSetting(env.DB, "footer").catch(() => null)
+      ]);
+      if (dbSocial) socialPlatforms = dbSocial;
+      if (dbPod) podcastPlatforms = dbPod;
+      if (dbHeader) headerSettings = dbHeader;
+      if (dbFooter) footerSettings = dbFooter;
+    } catch (e) {
+      console.warn("D1 root loader fetch warning:", e);
+    }
+  }
+
+  return json({ socialPlatforms, podcastPlatforms, headerSettings, footerSettings });
 };
 
 export const links: LinksFunction = () => [

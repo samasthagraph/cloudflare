@@ -81,20 +81,10 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
         role TEXT,
         avatar TEXT,
         bio TEXT,
+        twitter TEXT,
         website TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS contact_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT,
-        phone TEXT,
-        subject TEXT,
-        message TEXT NOT NULL,
-        status TEXT DEFAULT 'unread',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
   } catch (e) {
@@ -606,86 +596,6 @@ export async function saveDbAuthors(db: D1Database, authors: any[]): Promise<boo
     return true;
   } catch (err) {
     console.error("Error saving authors to D1:", err);
-    throw err;
-  }
-}
-
-// ---------------- CONTACT MESSAGES ---------------- //
-
-export async function getDbContactMessages(db?: D1Database): Promise<any[]> {
-  if (!db) {
-    try {
-      const messagesGlob = import.meta.glob("../content/settings/messages.json", { import: 'default', eager: true });
-      const messagesData = Object.values(messagesGlob)[0] as any;
-      return Array.isArray(messagesData) ? messagesData : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  try {
-    await ensureTablesExist(db);
-    const { results } = await db.prepare("SELECT * FROM contact_messages ORDER BY created_at DESC").all();
-    if (results && results.length > 0) {
-      return results.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        email: row.email,
-        phone: row.phone,
-        subject: row.subject,
-        message: row.message,
-        status: row.status || 'unread',
-        createdAt: row.created_at
-      }));
-    }
-    // Fallback to messages.json if empty
-    const messagesGlob = import.meta.glob("../content/settings/messages.json", { import: 'default', eager: true });
-    const messagesData = Object.values(messagesGlob)[0] as any;
-    return Array.isArray(messagesData) ? messagesData : [];
-  } catch (err) {
-    console.warn("Error fetching contact messages from D1:", err);
-    return [];
-  }
-}
-
-export async function saveDbContactMessage(db: D1Database, msg: any): Promise<boolean> {
-  try {
-    await ensureTablesExist(db);
-    await db.prepare(`
-      INSERT INTO contact_messages (name, email, phone, subject, message, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).bind(
-      msg.name || "Anonymous",
-      msg.email || "",
-      msg.phone || "",
-      msg.subject || "",
-      msg.message || "",
-      msg.status || "unread"
-    ).run();
-    return true;
-  } catch (err) {
-    console.error("Error saving contact message to D1:", err);
-    throw err;
-  }
-}
-
-export async function updateDbContactMessageStatus(db: D1Database, id: number | string, status: string): Promise<boolean> {
-  try {
-    await ensureTablesExist(db);
-    await db.prepare("UPDATE contact_messages SET status = ? WHERE id = ?").bind(status, id).run();
-    return true;
-  } catch (err) {
-    console.error("Error updating contact message status in D1:", err);
-    throw err;
-  }
-}
-
-export async function deleteDbContactMessage(db: D1Database, id: number | string): Promise<boolean> {
-  try {
-    await ensureTablesExist(db);
-    await db.prepare("DELETE FROM contact_messages WHERE id = ?").bind(id).run();
-    return true;
-  } catch (err) {
-    console.error("Error deleting contact message from D1:", err);
     throw err;
   }
 }
