@@ -163,6 +163,13 @@ import { extractYouTubeId, getYouTubeThumbnail } from "~/utils/youtube";
 export default function Index() {
   const { articles, videos, podcasts, hero, homepageSettings, podcastPlatforms } = useLoaderData<typeof loader>();
 
+  const heroSetting = homepageSettings?.hero;
+  const articlesSetting = homepageSettings?.articlesSection;
+  const videosSetting = homepageSettings?.videosSection;
+  const podcastsSetting = homepageSettings?.podcastsSection;
+  const fiqhSetting = homepageSettings?.fiqhSection;
+  const exploreSetting = homepageSettings?.exploreSection;
+
   const mainVideos = videos.slice(0, 4);
   const sideVideos = videos.slice(4, 9);
 
@@ -183,29 +190,30 @@ export default function Index() {
 
             <div className="space-y-6">
               <div className="inline-block bg-brand-gold/20 border border-brand-gold text-brand-gold px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide backdrop-blur-sm">
-                <i className="fas fa-broadcast-tower mr-2"></i> Live & On-Demand
+                <i className="fas fa-broadcast-tower mr-2"></i> {heroSetting?.badgeText || "Live & On-Demand"}
               </div>
-              <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-                Explore the <span className="text-brand-gold">Universe</span> of Knowledge.
-              </h1>
+              <h1
+                className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight"
+                dangerouslySetInnerHTML={{ __html: heroSetting?.title || 'Explore the <span class="text-brand-gold">Universe</span> of Knowledge.' }}
+              />
               <p className="font-sans text-xl text-brand-surface font-medium opacity-90">
-                Samastha Graph — Exploring the Universe of Knowledge
+                {heroSetting?.subtitle || "Samastha Graph — Exploring the Universe of Knowledge"}
               </p>
               <p className="text-lg text-brand-light/80 max-w-lg">
-                Dive into premium Islamic content, thought-provoking podcasts, and enlightening documentaries designed to inspire your spiritual journey.
+                {heroSetting?.description || "Dive into premium Islamic content, thought-provoking podcasts, and enlightening documentaries designed to inspire your spiritual journey."}
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <a href="#videos" className="bg-brand-gold text-brand-dark font-semibold px-8 py-3 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-brand-gold/20 flex items-center gap-2">
-                  <i className="fas fa-play"></i> Watch Now
+                <a href={heroSetting?.primaryButtonLink || "#videos"} className="bg-brand-gold text-brand-dark font-semibold px-8 py-3 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-brand-gold/20 flex items-center gap-2">
+                  <i className="fas fa-play"></i> {heroSetting?.primaryButtonText || "Watch Now"}
                 </a>
-                <a href="#podcasts" className="bg-transparent border-2 border-brand-surface text-brand-light font-semibold px-8 py-3 rounded-full hover:bg-brand-surface hover:text-brand-dark transition-all flex items-center gap-2">
-                  <i className="fas fa-headphones"></i> Listen to Podcasts
+                <a href={heroSetting?.secondaryButtonLink || "#podcasts"} className="bg-transparent border-2 border-brand-surface text-brand-light font-semibold px-8 py-3 rounded-full hover:bg-brand-surface hover:text-brand-dark transition-all flex items-center gap-2">
+                  <i className="fas fa-headphones"></i> {heroSetting?.secondaryButtonText || "Listen to Podcasts"}
                 </a>
               </div>
             </div>
 
-            {hero && homepageSettings?.hero?.enabled !== false && (
-              homepageSettings?.hero?.type === 'video' ? (
+            {hero && heroSetting?.enabled !== false && (
+              heroSetting?.type === 'video' ? (
                 <button onClick={() => setSelectedVideo(extractYouTubeId(hero.youtubeId))} className="relative group cursor-pointer block w-full text-left mt-12 md:mt-0">
                   <div className="absolute inset-0 bg-brand-gold rounded-2xl transform rotate-3 scale-105 opacity-20 transition-transform group-hover:rotate-6"></div>
                   <div className="relative bg-brand-dark border border-brand-olive rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
@@ -215,13 +223,13 @@ export default function Index() {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-brand-dark to-transparent">
                       <span className="bg-brand-olive text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block uppercase">
-                        {homepageSettings?.hero?.eyebrow || hero.category || 'Featured Video'}
+                        {heroSetting?.eyebrow || hero.category || 'Featured Video'}
                       </span>
                       <Link to={`/videos/${hero.slug}`} onClick={(e) => e.stopPropagation()} className="block hover:text-brand-gold transition-colors">
-                        <h3 className="font-heading font-bold text-xl text-white line-clamp-2">{homepageSettings?.hero?.displayTitle || hero.title}</h3>
+                        <h3 className="font-heading font-bold text-xl text-white line-clamp-2">{heroSetting?.displayTitle || hero.title}</h3>
                       </Link>
-                      {(homepageSettings?.hero?.displayDescription || hero.description) && (
-                        <p className="text-sm text-gray-300 mt-2 line-clamp-2">{homepageSettings?.hero?.displayDescription || hero.description}</p>
+                      {(heroSetting?.displayDescription || hero.description) && (
+                        <p className="text-sm text-gray-300 mt-2 line-clamp-2">{heroSetting?.displayDescription || hero.description}</p>
                       )}
                     </div>
                   </div>
@@ -240,11 +248,11 @@ export default function Index() {
                     )}
                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-brand-dark to-transparent">
                       <span className="bg-brand-olive text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block uppercase">
-                        {homepageSettings?.hero?.eyebrow || hero.category || 'Featured Article'}
+                        {heroSetting?.eyebrow || hero.category || 'Featured Article'}
                       </span>
-                      <h3 className="font-heading font-bold text-xl text-white line-clamp-2 group-hover:text-brand-gold transition-colors">{homepageSettings?.hero?.displayTitle || hero.title}</h3>
-                      {(homepageSettings?.hero?.displayDescription || hero.excerpt || hero.description) && (
-                        <p className="text-sm text-gray-300 mt-2 line-clamp-2">{homepageSettings?.hero?.displayDescription || hero.excerpt || hero.description}</p>
+                      <h3 className="font-heading font-bold text-xl text-white line-clamp-2 group-hover:text-brand-gold transition-colors">{heroSetting?.displayTitle || hero.title}</h3>
+                      {(heroSetting?.displayDescription || hero.excerpt || hero.description) && (
+                        <p className="text-sm text-gray-300 mt-2 line-clamp-2">{heroSetting?.displayDescription || hero.excerpt || hero.description}</p>
                       )}
                     </div>
                   </div>
@@ -261,12 +269,15 @@ export default function Index() {
 
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="font-heading text-3xl font-bold text-brand-dark mb-2">Articles
+              <h2 className="font-heading text-3xl font-bold text-brand-dark mb-2">
+                {articlesSetting?.title || "Articles"}
               </h2>
-              <p className="text-brand-muted">Latest updates and heritage stories</p>
+              <p className="text-brand-muted">
+                {articlesSetting?.subtitle || "Latest updates and heritage stories"}
+              </p>
             </div>
             <Link to="/articles" className="hidden sm:inline-flex items-center font-semibold text-brand-olive hover:text-brand-dark transition-colors">
-              View All Articles <i className="fas fa-arrow-right ml-2"></i>
+              {articlesSetting?.viewAllText || "View All Articles"} <i className="fas fa-arrow-right ml-2"></i>
             </Link>
           </div>
 
@@ -301,7 +312,7 @@ export default function Index() {
                   <h3 className="font-heading font-bold text-xl text-brand-dark mb-3 line-clamp-2 group-hover:text-brand-gold transition-colors">{article.title}</h3>
                   <p className="font-sans text-sm text-gray-600 line-clamp-3 mb-4 flex-grow">{article.excerpt || "Read the full story to learn more."}</p>
                   <div className="flex items-center text-brand-olive font-semibold text-sm group-hover:text-brand-gold transition-colors mt-auto">
-                    Read Story <i className="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    {articlesSetting?.readStoryText || "Read Story"} <i className="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
                   </div>
                 </div>
               </Link>
@@ -310,7 +321,7 @@ export default function Index() {
 
           <div className="mt-10 text-center sm:hidden">
             <Link to="/articles" className="inline-block border-2 border-brand-olive text-brand-dark font-semibold px-8 py-3 rounded-full hover:bg-brand-olive hover:text-white transition-colors">
-              View All Articles
+              {articlesSetting?.viewAllText || "View All Articles"}
             </Link>
           </div>
         </div>
@@ -322,7 +333,7 @@ export default function Index() {
           {/* Section Header */}
           <div className="flex items-center justify-between mb-8 sm:mb-10">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-brand-dark tracking-tight">
-              Videos
+              {videosSetting?.title || "Videos"}
             </h2>
           </div>
 
@@ -354,7 +365,7 @@ export default function Index() {
                       {video.status === 'scheduled' && (
                         <div className="absolute bottom-3 left-3">
                           <span className="bg-brand-gold text-brand-dark text-xs font-bold px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider">
-                            Upcoming
+                            {videosSetting?.upcomingBadgeText || "Upcoming"}
                           </span>
                         </div>
                       )}
@@ -415,7 +426,7 @@ export default function Index() {
                   to="/videos"
                   className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-brand-dark hover:text-brand-olive uppercase tracking-wider transition-colors group"
                 >
-                  <span>See all</span>
+                  <span>{videosSetting?.seeAllText || "See all"}</span>
                   <i className="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
                 </Link>
               </div>
@@ -433,13 +444,15 @@ export default function Index() {
             <div className="w-full lg:w-5/12">
               <div className="inline-flex items-center gap-3 mb-6">
                 <span className="w-8 h-px bg-brand-gold"></span>
-                <span className="text-xs font-bold tracking-[0.2em] text-brand-gold uppercase">PODCAST</span>
+                <span className="text-xs font-bold tracking-[0.2em] text-brand-gold uppercase">
+                  {podcastsSetting?.badgeText || "PODCAST"}
+                </span>
               </div>
               <h2 className="font-heading text-4xl md:text-5xl font-bold text-brand-dark mb-6">
-                Conversations that inform, educate and connect.
+                {podcastsSetting?.title || "Conversations that inform, educate and connect."}
               </h2>
               <p className="text-brand-olive text-lg mb-10 leading-relaxed">
-                Dive into deep discussions, heritage stories, and exclusive reflections from Samastha Graph.
+                {podcastsSetting?.description || "Dive into deep discussions, heritage stories, and exclusive reflections from Samastha Graph."}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -447,7 +460,7 @@ export default function Index() {
                   to="/podcasts"
                   className="inline-flex items-center justify-center gap-2 bg-brand-dark text-white font-bold px-8 py-4 rounded-full hover:bg-brand-olive transition-colors shadow-lg hover:shadow-xl"
                 >
-                  Explore Podcast
+                  {podcastsSetting?.exploreButtonText || "Explore Podcast"}
                   <i className="fas fa-arrow-right ml-2"></i>
                 </Link>
 
@@ -459,7 +472,7 @@ export default function Index() {
                     className="inline-flex items-center justify-center gap-2 border-2 border-brand-surface text-brand-dark font-bold px-8 py-4 rounded-full hover:border-brand-olive hover:text-brand-olive transition-colors"
                   >
                     <i className="fab fa-spotify text-xl"></i>
-                    Also on Spotify
+                    {podcastsSetting?.spotifyButtonText || "Also on Spotify"}
                   </a>
                 )}
               </div>
@@ -486,7 +499,7 @@ export default function Index() {
                 </div>
               ) : (
                 <div className="bg-white border border-brand-surface rounded-2xl p-12 text-center text-brand-muted">
-                  Podcast episodes coming soon.
+                  {podcastsSetting?.comingSoonText || "Podcast episodes coming soon."}
                 </div>
               )}
             </div>
@@ -507,29 +520,29 @@ export default function Index() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 relative z-10 text-center">
           <div className="inline-block mb-6">
             <span className="font-sans text-xs tracking-widest uppercase font-bold text-brand-olive border border-brand-olive/30 px-3 py-1 rounded-full bg-brand-olive/5">
-              Facility
+              {fiqhSetting?.badgeText || "Facility"}
             </span>
           </div>
 
           <h2 className="font-heading text-4xl md:text-5xl font-bold text-brand-dark mb-4">
-            FIQH FILES
+            {fiqhSetting?.title || "FIQH FILES"}
           </h2>
 
           <h3 className="font-heading text-xl md:text-2xl text-brand-gold font-semibold mb-6">
-            Questions of Fiqh. Clear answers.
+            {fiqhSetting?.subtitle || "Questions of Fiqh. Clear answers."}
           </h3>
 
           <p className="text-brand-muted text-lg leading-relaxed mb-10 max-w-xl mx-auto">
-            A dedicated platform for the public to explore Fiqh questions and answers.
+            {fiqhSetting?.description || "A dedicated platform for the public to explore Fiqh questions and answers."}
           </p>
 
           <a
-            href="https://fiqhfiles.samasthagraph.com/"
+            href={fiqhSetting?.buttonUrl || "https://fiqhfiles.samasthagraph.com/"}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-brand-dark hover:bg-brand-olive text-white font-bold py-3.5 px-8 rounded-full transition-all duration-300 shadow hover:shadow-lg"
           >
-            Explore Fiqh Files <i className="fas fa-arrow-up right-0 rotate-45 text-sm ml-1"></i>
+            {fiqhSetting?.buttonText || "Explore Fiqh Files"} <i className="fas fa-arrow-up right-0 rotate-45 text-sm ml-1"></i>
           </a>
         </div>
       </section>
@@ -547,10 +560,10 @@ export default function Index() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10">
           <div className="text-center mb-12">
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-brand-gold mb-4">
-              Explore Samastha Graph
+              {exploreSetting?.title || "Explore Samastha Graph"}
             </h2>
             <p className="text-brand-surface max-w-2xl mx-auto text-sm md:text-base">
-              Discover more from Samastha Graph through our latest videos and podcasts.
+              {exploreSetting?.subtitle || "Discover more from Samastha Graph through our latest videos and podcasts."}
             </p>
           </div>
 
@@ -567,11 +580,11 @@ export default function Index() {
               </div>
 
               <h3 className="text-xl md:text-2xl font-bold text-white mb-3 group-hover:text-brand-gold transition-colors">
-                Videos
+                {exploreSetting?.videoCardTitle || "Videos"}
               </h3>
 
               <p className="text-brand-surface/80 text-sm md:text-base">
-                Watch our latest programmes, lectures, and series from Samastha Graph.
+                {exploreSetting?.videoCardDescription || "Watch our latest programmes, lectures, and series from Samastha Graph."}
               </p>
             </Link>
 
@@ -587,11 +600,11 @@ export default function Index() {
               </div>
 
               <h3 className="text-xl md:text-2xl font-bold text-white mb-3 group-hover:text-brand-gold transition-colors">
-                Podcasts
+                {exploreSetting?.podcastCardTitle || "Podcasts"}
               </h3>
 
               <p className="text-brand-surface/80 text-sm md:text-base">
-                Listen to deep-dive audio discussions, stories, and podcast episodes.
+                {exploreSetting?.podcastCardDescription || "Listen to deep-dive audio discussions, stories, and podcast episodes."}
               </p>
             </Link>
           </div>

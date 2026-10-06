@@ -1,12 +1,55 @@
 {
   "hero": {
     "enabled": true,
+    "badgeText": "",
+    "title": "THE ILLUMINATED <span class=\"text-brand-gold\">COSMOS </span>OF KNOWLEDGE",
+    "subtitle": "Samastha Graph",
+    "description": "Dive into premium Islamic content, thought-provoking podcasts, and enlightening documentaries designed to inspire your spiritual journey.",
+    "primaryButtonText": "Watch Now",
+    "primaryButtonLink": "#videos",
+    "secondaryButtonText": "Listen to Podcasts",
+    "secondaryButtonLink": "#podcasts",
     "type": "video",
-    "slug": "minal-qalb-episode-01",
+    "slug": "launching--samastha-graph--kanthapuram-ap-aboobacker-musliyar",
     "layout": "cinematic",
     "eyebrow": "FEATURED VIDEO",
     "displayTitle": "",
     "displayDescription": "",
     "ctaText": "Watch Now"
+  },
+  "articlesSection": {
+    "title": "Articles",
+    "subtitle": "Latest updates and heritage stories",
+    "viewAllText": "View All Articles",
+    "readStoryText": "Read Story"
+  },
+  "videosSection": {
+    "title": "Videos",
+    "seeAllText": "See all",
+    "upcomingBadgeText": "Upcoming"
+  },
+  "podcastsSection": {
+    "badgeText": "PODCAST",
+    "title": "Conversations that inform, educate and connect.",
+    "description": "Dive into deep discussions, heritage stories, and exclusive reflections from Samastha Graph.",
+    "exploreButtonText": "Explore Podcast",
+    "spotifyButtonText": "Also on Spotify",
+    "comingSoonText": "Podcast episodes coming soon."
+  },
+  "fiqhSection": {
+    "badgeText": "Facility",
+    "title": "FIQH FILES",
+    "subtitle": "Questions of Fiqh. Clear answers.",
+    "description": "A dedicated platform for the public to explore Fiqh questions and answers.",
+    "buttonText": "Explore Fiqh Files",
+    "buttonUrl": "https://fiqhfiles.samasthagraph.com/"
+  },
+  "exploreSection": {
+    "title": "Explore Samastha Graph",
+    "subtitle": "Discover more from Samastha Graph through our latest videos and podcasts.",
+    "videoCardTitle": "Videos",
+    "videoCardDescription": "Watch our latest programmes, lectures, and series from Samastha Graph.",
+    "podcastCardTitle": "Podcasts",
+    "podcastCardDescription": "Listen to deep-dive audio discussions, stories, and podcast episodes."
   }
 }
