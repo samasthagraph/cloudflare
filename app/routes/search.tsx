@@ -1,6 +1,13 @@
 import React from 'react';
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Search • Samastha Graph" },
+    { name: "description", content: "Search for articles, videos, podcasts, and programs across Samastha Graph." },
+  ];
+};
 import fm from "front-matter";
 import { Search as SearchIcon, FileText, Video, Mic, LayoutDashboard, ChevronRight } from "lucide-react";
 import { OptimizedImage } from "~/components/OptimizedImage";

@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { json, redirect } from "@remix-run/cloudflare";
+import { json, redirect, type MetaFunction } from "@remix-run/cloudflare";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Admin Dashboard • Samastha Graph" },
+  ];
+};
+
 import { HeaderAdmin } from "../components/HeaderAdmin";
 import { FooterAdmin } from "../components/FooterAdmin";
 import { ProfileAdmin } from "../components/ProfileAdmin";

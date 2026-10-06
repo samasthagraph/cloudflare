@@ -91,7 +91,7 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data, location }) => {
   if (!data || !data.article) {
-    return [{ title: "Article Not Found | Samastha Graph" }];
+    return [{ title: "Article Not Found • Samastha Graph" }];
   }
   const article = data.article;
   const url = `https://samasthagraph.pages.dev${location.pathname}`;
@@ -103,7 +103,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, location }) => {
     : 'https://samasthagraph.pages.dev/Logo.png';
 
   return [
-    { title: `${article.seoTitle || article.title} | Samastha Graph` },
+    { title: `${article.seoTitle || article.title} • Samastha Graph` },
     { name: "description", content: article.seoDescription || article.excerpt },
     { property: "og:title", content: article.seoTitle || article.title },
     { property: "og:description", content: article.seoDescription || article.excerpt },

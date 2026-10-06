@@ -189,9 +189,11 @@ export default function Index() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
             <div className="space-y-6">
-              <div className="inline-block bg-brand-gold/20 border border-brand-gold text-brand-gold px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide backdrop-blur-sm">
-                <i className="fas fa-broadcast-tower mr-2"></i> {heroSetting?.badgeText || "Live & On-Demand"}
-              </div>
+              {heroSetting?.badgeText && heroSetting.badgeText.trim() !== "" && (
+                <div className="inline-block bg-brand-gold/20 border border-brand-gold text-brand-gold px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide backdrop-blur-sm">
+                  <i className="fas fa-broadcast-tower mr-2"></i> {heroSetting.badgeText}
+                </div>
+              )}
               <h1
                 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight"
                 dangerouslySetInnerHTML={{ __html: heroSetting?.title || 'Explore the <span class="text-brand-gold">Universe</span> of Knowledge.' }}

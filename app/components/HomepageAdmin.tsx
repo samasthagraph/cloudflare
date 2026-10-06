@@ -14,7 +14,7 @@ export function HomepageAdmin({ homepageSettings, articles, videos }: HomepageAd
   const defaultSettings = {
     hero: {
       enabled: true,
-      badgeText: "Live & On-Demand",
+      badgeText: "",
       title: "Explore the <span class=\"text-brand-gold\">Universe</span> of Knowledge.",
       subtitle: "Samastha Graph — Exploring the Universe of Knowledge",
       description: "Dive into premium Islamic content, thought-provoking podcasts, and enlightening documentaries designed to inspire your spiritual journey.",

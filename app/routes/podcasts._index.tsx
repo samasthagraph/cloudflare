@@ -1,6 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLoaderData, Link, useRouteLoaderData } from "@remix-run/react";
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Podcasts • Samastha Graph" },
+    { name: "description", content: "Listen to inspiring podcasts, talks, and discussions on Samastha Graph." },
+    { property: "og:title", content: "Podcasts • Samastha Graph" },
+    { property: "og:description", content: "Listen to inspiring podcasts, talks, and discussions on Samastha Graph." },
+  ];
+};
 import {
   Play, Pause, Clock, Search, Headphones,
   ChevronRight, ChevronDown, SkipBack, SkipForward, Sparkles, Filter, Radio, Disc, Volume2, VolumeX, X, Maximize2,

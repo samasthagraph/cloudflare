@@ -14,9 +14,9 @@ const renderIcon = (iconName: string) => {
 export const meta: MetaFunction = ({ location }) => {
   const url = `https://samasthagraph.pages.dev${location.pathname}`;
   return [
-    { title: "About Samastha Graph" },
+    { title: "About Us • Samastha Graph" },
     { name: "description", content: "The collective voice of Samastha" },
-    { property: "og:title", content: "About Samastha Graph" },
+    { property: "og:title", content: "About Us • Samastha Graph" },
     { property: "og:url", content: url },
     { tagName: "link", rel: "canonical", href: url },
     { tagName: "link", rel: "alternate", hreflang: "ml", href: "https://samasthagraph.pages.dev/about" },

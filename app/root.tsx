@@ -1,4 +1,4 @@
-import { json, type LinksFunction } from "@remix-run/cloudflare";
+import { json, type LinksFunction, type MetaFunction } from "@remix-run/cloudflare";
 import {
   Links,
   Meta,
@@ -10,6 +10,13 @@ import {
 import stylesheet from "~/tailwind.css?url";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Samastha Graph" },
+    { name: "description", content: "The collective voice and digital universe of knowledge." },
+  ];
+};
 
 export const loader = async ({ context }: any) => {
   let socialPlatforms = null;

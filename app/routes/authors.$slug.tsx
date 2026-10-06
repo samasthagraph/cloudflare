@@ -111,10 +111,10 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   if (!data || !data.author) {
-    return [{ title: "Author Not Found | Samastha Graph" }];
+    return [{ title: "Author Not Found • Samastha Graph" }];
   }
   const author = data.author;
-  const title = `${author.nameMl || author.name} | Authors & Scholars | Samastha Graph`;
+  const title = `${author.nameMl || author.name} • Samastha Graph`;
   const description = author.bio || `${author.name} is a contributing scholar and author on Samastha Graph.`;
   return [
     { title },

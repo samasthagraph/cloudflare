@@ -1,10 +1,19 @@
 import { useLoaderData, Link } from "@remix-run/react";
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useState } from "react";
 import fm from "front-matter";
 import { OptimizedImage } from "~/components/OptimizedImage";
 import { isMalayalam } from "~/utils/language";
 import { getDbArticles } from "~/utils/db.server";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Articles • Samastha Graph" },
+    { name: "description", content: "Read scholarly articles, essays, research papers, and analyses on Samastha Graph." },
+    { property: "og:title", content: "Articles • Samastha Graph" },
+    { property: "og:description", content: "Read scholarly articles, essays, research papers, and analyses on Samastha Graph." },
+  ];
+};
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const ctx = context as any;

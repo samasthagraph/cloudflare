@@ -1,6 +1,12 @@
-import { json, redirect } from "@remix-run/cloudflare";
+import { json, redirect, type MetaFunction } from "@remix-run/cloudflare";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { getSessionStorage } from "../sessions.server";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Admin Login • Samastha Graph" },
+  ];
+};
 
 export const loader = async ({ request, context }: any) => {
   const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});

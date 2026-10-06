@@ -29,12 +29,12 @@ const themeMap: Record<string, { title: string; body: string; align: string }> =
 
 export const meta: MetaFunction<typeof loader> = ({ data }: any) => {
   if (!data || !data.podcast) {
-    return [{ title: "Podcast Not Found | Samastha Graph" }];
+    return [{ title: "Podcast Not Found • Samastha Graph" }];
   }
   const { podcast } = data;
   const ogImage = podcast.customThumbnail || podcast.artwork || `/default-podcast.jpg`;
   return [
-    { title: `${podcast.title} | Samastha Graph Podcasts` },
+    { title: `${podcast.title} • Samastha Graph` },
     { name: "description", content: podcast.description?.substring(0, 160) || "Listen to this podcast on Samastha Graph." },
     { property: "og:title", content: podcast.title },
     { property: "og:description", content: podcast.description?.substring(0, 160) },

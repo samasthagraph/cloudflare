@@ -1,8 +1,10 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { isEnglish } from "~/utils/language";
 import { fetchYouTubePlaylistVideos } from "~/utils/youtube";
-import VideosIndex from "./videos._index";
+import VideosIndex, { meta as originalMeta } from "./videos._index";
 import { getDbVideos, getDbPrograms, getDbSetting } from "~/utils/db.server";
+
+export const meta: MetaFunction = originalMeta;
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});

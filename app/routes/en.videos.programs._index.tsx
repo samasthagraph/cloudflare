@@ -7,7 +7,7 @@ import { CompactHero } from "~/components/CompactHero";
 import { getDbPrograms, getDbVideos } from "~/utils/db.server";
 
 export const meta: MetaFunction = () => [
-  { title: "Programs & Series | Samastha Graph" },
+  { title: "Programs & Series • Samastha Graph" },
   { name: "description", content: "Browse all English video programs and series on Samastha Graph." },
   { tagName: "link", rel: "canonical", href: "https://samasthagraph.pages.dev/en/videos/programs" },
   { tagName: "link", rel: "alternate", hreflang: "en", href: "https://samasthagraph.pages.dev/en/videos/programs" },

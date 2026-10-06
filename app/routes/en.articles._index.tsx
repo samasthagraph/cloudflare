@@ -1,8 +1,10 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import fm from "front-matter";
 import { isEnglish } from "~/utils/language";
-import ArticlesIndex from "./articles._index";
+import ArticlesIndex, { meta as originalMeta } from "./articles._index";
 import { getDbArticles } from "~/utils/db.server";
+
+export const meta: MetaFunction = originalMeta;
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});

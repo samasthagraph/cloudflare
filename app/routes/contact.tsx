@@ -42,9 +42,9 @@ export const action = async ({ request }: any) => {
 export const meta: MetaFunction = ({ location }) => {
   const url = `https://samasthagraph.pages.dev${location.pathname}`;
   return [
-    { title: "Contact Us | Samastha Graph" },
+    { title: "Contact Us • Samastha Graph" },
     { name: "description", content: "Get in touch with Samastha Graph" },
-    { property: "og:title", content: "Contact Us | Samastha Graph" },
+    { property: "og:title", content: "Contact Us • Samastha Graph" },
     { property: "og:url", content: url },
     { tagName: "link", rel: "canonical", href: url },
     { tagName: "link", rel: "alternate", hreflang: "ml", href: "https://samasthagraph.pages.dev/contact" },

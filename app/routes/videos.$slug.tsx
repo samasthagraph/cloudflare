@@ -27,12 +27,12 @@ const themeMap: Record<string, { title: string; body: string; align: string }> =
 
 export const meta: MetaFunction<typeof loader> = ({ data }: any) => {
   if (!data || !data.video) {
-    return [{ title: "Video Not Found | Samastha Graph" }];
+    return [{ title: "Video Not Found • Samastha Graph" }];
   }
   const { video } = data;
   const ogImage = video.customThumbnail || getYouTubeThumbnail(video.youtubeId);
   return [
-    { title: `${video.title} | Samastha Graph` },
+    { title: `${video.title} • Samastha Graph` },
     { name: "description", content: video.description?.substring(0, 160) || "Watch this video on Samastha Graph." },
     { property: "og:title", content: video.title },
     { property: "og:description", content: video.description?.substring(0, 160) },

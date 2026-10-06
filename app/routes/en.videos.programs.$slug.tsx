@@ -7,12 +7,12 @@ import { extractYouTubeId, extractYouTubePlaylistId, getYouTubeThumbnail, fetchY
 
 export const meta: MetaFunction<typeof loader> = ({ data }: any) => {
   if (!data || !data.program) {
-    return [{ title: "Program Not Found | Samastha Graph" }];
+    return [{ title: "Program Not Found • Samastha Graph" }];
   }
   const { program, mlCounterpartSlug } = data;
   const canonical = `https://samasthagraph.pages.dev/en/videos/programs/${program.slug}`;
   return [
-    { title: `${program.title} | Samastha Graph` },
+    { title: `${program.title} • Samastha Graph` },
     { name: "description", content: program.description?.substring(0, 160) || `Watch the ${program.title} series on Samastha Graph.` },
     { tagName: "link", rel: "canonical", href: canonical },
     { tagName: "link", rel: "alternate", hreflang: "en", href: canonical },

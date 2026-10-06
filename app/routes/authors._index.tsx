@@ -58,9 +58,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Authors & Scholars | Samastha Graph" },
+    { title: "Authors & Scholars • Samastha Graph" },
     { name: "description", content: "Explore scholars, writers, researchers, and thought leaders contributing to Samastha Graph." },
-    { property: "og:title", content: "Authors & Scholars | Samastha Graph" },
+    { property: "og:title", content: "Authors & Scholars • Samastha Graph" },
     { property: "og:description", content: "Explore scholars, writers, researchers, and thought leaders contributing to Samastha Graph." }
   ];
 };

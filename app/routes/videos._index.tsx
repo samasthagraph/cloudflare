@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { OptimizedImage } from "~/components/OptimizedImage";
 import { useLoaderData, Link } from "@remix-run/react";
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { isMalayalam } from "~/utils/language";
 import { extractYouTubeId, getYouTubeThumbnail, fetchYouTubePlaylistVideos } from "~/utils/youtube";
 import { Disc, Play, Calendar, ChevronRight, Layers, X, ExternalLink, Sparkles } from "lucide-react";
 import { getDbVideos, getDbPrograms } from "~/utils/db.server";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Videos • Samastha Graph" },
+    { name: "description", content: "Watch insightful videos, lectures, and series on Samastha Graph." },
+    { property: "og:title", content: "Videos • Samastha Graph" },
+    { property: "og:description", content: "Watch insightful videos, lectures, and series on Samastha Graph." },
+  ];
+};
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {

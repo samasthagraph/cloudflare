@@ -6,7 +6,7 @@ import { getYouTubeThumbnail } from "~/utils/youtube";
 import { getDbPrograms, getDbVideos } from "~/utils/db.server";
 
 export const meta: MetaFunction = () => [
-  { title: "Programs & Series | Samastha Graph" },
+  { title: "Programs & Series • Samastha Graph" },
   { name: "description", content: "Browse all video programs and series on Samastha Graph — an editorial video platform for Islamic knowledge." },
   { tagName: "link", rel: "canonical", href: "https://samasthagraph.pages.dev/videos/programs" },
   { tagName: "link", rel: "alternate", hreflang: "ml", href: "https://samasthagraph.pages.dev/videos/programs" },
