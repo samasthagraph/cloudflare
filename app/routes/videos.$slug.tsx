@@ -170,6 +170,8 @@ export const loader = async ({ params, context, request }: any) => {
       description: v.description || v.body || "",
       category: v.category || (v.programId ? (v.programId === 'minal-qalb' ? 'Minal Qalb' : v.programId === 'noorul-hira' ? 'Noorul Hira' : v.programId === 'ananthapporul' ? 'Ananthapporul' : v.programId) : "General"),
       playlist: v.playlist || null,
+      programId: v.programId || v.program || v.programName || null,
+      programName: v.programName || v.program || v.programId || null,
       date: v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : "Recent",
       rawDate: v.publishedAt || "1970-01-01",
       status: v.status || "published",
@@ -182,17 +184,23 @@ export const loader = async ({ params, context, request }: any) => {
   const malayalamVideos = allVideos.filter(v => isMalayalam(v));
   malayalamVideos.sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
 
-  const activeVideo = malayalamVideos.find(v => v.slug === slug);
+  const activeVideo = malayalamVideos.find(v => 
+    v.slug === slug || 
+    v.youtubeId === slug || 
+    v.slug === `youtube-${slug}` || 
+    `youtube-${v.youtubeId}` === slug ||
+    v.id === slug
+  );
 
   if (!activeVideo) {
     throw new Response("Video Not Found", { status: 404 });
   }
 
   // Find related videos (same category or recent)
-  const relatedVideos = malayalamVideos.filter(v => v.slug !== slug && v.category === activeVideo.category).slice(0, 4);
+  const relatedVideos = malayalamVideos.filter(v => v.slug !== activeVideo.slug && v.category === activeVideo.category).slice(0, 4);
   
   // If we don't have related videos in the same category, just take the most recent ones
-  const finalRelated = relatedVideos.length > 0 ? relatedVideos : malayalamVideos.filter(v => v.slug !== slug).slice(0, 4);
+  const finalRelated = relatedVideos.length > 0 ? relatedVideos : malayalamVideos.filter(v => v.slug !== activeVideo.slug).slice(0, 4);
   const upNext = finalRelated.length > 0 ? finalRelated[0] : null;
 
   let counterpartSlug = null;
@@ -206,15 +214,18 @@ export const loader = async ({ params, context, request }: any) => {
   // Phase 2: find the program this video belongs to, if any
   let videoProgram: any = null;
   if (activeVideo) {
-    const rawProgramId = (localMap.get(activeVideo.slug) as any)?.programId ||
-      Object.entries(jsonVideos).find(([path]) => path.split('/').pop()?.replace('.json', '') === activeVideo.slug)?.[1] &&
-      (Object.entries(jsonVideos).find(([path]) => path.split('/').pop()?.replace('.json', '') === activeVideo.slug)?.[1] as any)?.programId;
-    const programId = rawProgramId || null;
-    if (programId) {
-      const programsGlob = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
-      const matched = Object.entries(programsGlob)
-        .map(([path, content]: any) => ({ slug: path.split('/').pop()?.replace('.json', ''), ...content }))
-        .find((p: any) => p.slug === programId && isMalayalam(p) && p.status === 'published');
+    const rawProgramId = activeVideo.programId || 
+      activeVideo.programName || 
+      (localMap.get(activeVideo.slug) as any)?.programId || 
+      (localMap.get(activeVideo.slug) as any)?.programName || 
+      null;
+
+    if (rawProgramId) {
+      const matched = allPrograms.find((p: any) => 
+        (p.slug === rawProgramId || p.title === rawProgramId) && 
+        isMalayalam(p) && 
+        (p.status === 'published' || !p.status)
+      );
       if (matched) videoProgram = matched;
     }
   }

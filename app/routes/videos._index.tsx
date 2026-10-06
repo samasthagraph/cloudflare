@@ -101,7 +101,10 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   // Calculate episode counts per program
   const programCounts: Record<string, number> = {};
   programs.forEach((p: any) => {
-    programCounts[p.slug] = videosData.filter((v: any) => v.programId === p.slug).length;
+    programCounts[p.slug] = videosData.filter((v: any) => 
+      (v.programId === p.slug || v.programName === p.title || v.program === p.slug || v.program === p.title) &&
+      (v.status === 'published' || !v.status)
+    ).length;
   });
 
   // Load spotlight settings
@@ -265,7 +268,10 @@ export default function Videos() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {programs.map((program: any) => {
                 const count = programCounts?.[program.slug] || 0;
-                const firstVideo = videos.find((v: any) => v.programId === program.slug && v.status === "published");
+                const firstVideo = videos.find((v: any) => 
+                  (v.programId === program.slug || v.programName === program.title || v.program === program.slug || v.program === program.title) && 
+                  (v.status === "published" || !v.status)
+                );
                 const fallbackThumbnail = firstVideo?.youtubeId ? getYouTubeThumbnail(firstVideo.youtubeId) : null;
                 const displayThumbnail = program.coverImage || program.youtubeThumbnail || fallbackThumbnail;
 

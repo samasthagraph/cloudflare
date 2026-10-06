@@ -54,7 +54,11 @@ export const loader = async ({ params, context }: any) => {
   }
 
   // Find the matching English published program
-  const program = allPrograms.find((p: any) => p.slug === slug && isEnglish(p) && p.status === "published");
+  const program = allPrograms.find((p: any) => 
+    p.slug === slug && 
+    isEnglish(p) && 
+    (p.status === "published" || !p.status)
+  );
 
   if (!program) {
     throw new Response(null, { status: 404 });
@@ -62,7 +66,11 @@ export const loader = async ({ params, context }: any) => {
 
   // Load videos belonging to this program
   let episodeVideos = allVideos
-    .filter((v: any) => isEnglish(v) && v.status === "published" && (v.programId === program.slug || v.programName === program.title || v.program === program.slug));
+    .filter((v: any) => 
+      isEnglish(v) && 
+      (v.status === "published" || !v.status) && 
+      (v.programId === program.slug || v.programName === program.title || v.program === program.slug || v.program === program.title)
+    );
 
   // If program has a YouTube playlist ID, dynamically fetch any additional videos from the YouTube playlist feed
   if (program.youtubePlaylistId) {
@@ -101,17 +109,12 @@ export const loader = async ({ params, context }: any) => {
   // Find Malayalam counterpart via translationGroupId
   let mlCounterpartSlug: string | null = null;
   if (program.translationGroupId) {
-    const mlCounterpart = Object.entries(programsGlob)
-      .map(([path, content]: any) => ({
-        slug: path.split("/").pop()?.replace(".json", ""),
-        ...content,
-      }))
-      .find((p: any) =>
-        p.translationGroupId === program.translationGroupId &&
-        p.slug !== program.slug &&
-        p.language !== "en" &&
-        p.status === "published"
-      );
+    const mlCounterpart = allPrograms.find((p: any) =>
+      p.translationGroupId === program.translationGroupId &&
+      p.slug !== program.slug &&
+      isMalayalam(p) &&
+      (p.status === "published" || !p.status)
+    );
     if (mlCounterpart) mlCounterpartSlug = mlCounterpart.slug;
   }
 

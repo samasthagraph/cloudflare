@@ -27,8 +27,8 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   if (env?.DB) {
     programs = (dbPrograms || [])
       .filter(isEnglish)
-      .filter((p: any) => p.status === "published");
-    videos = (dbVideos || []).filter((v: any) => v.status === "published");
+      .filter((p: any) => p.status === "published" || !p.status);
+    videos = (dbVideos || []).filter((v: any) => v.status === "published" || !v.status);
   } else {
     const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
     programs = Object.entries(programsGlob).map(([path, content]: any) => ({
@@ -36,13 +36,13 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
       ...content,
     }))
       .filter(isEnglish)
-      .filter((p: any) => p.status === "published");
+      .filter((p: any) => p.status === "published" || !p.status);
 
     const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
     videos = Object.entries(videosGlob).map(([path, content]: any) => ({
       slug: path.split("/").pop()?.replace(".json", ""),
       ...content,
-    })).filter((v: any) => v.status === "published");
+    })).filter((v: any) => v.status === "published" || !v.status);
   }
 
   programs.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
@@ -55,7 +55,7 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
         const videoMap = new Map<string, any>();
         videos.forEach(v => videoMap.set(v.slug, v));
         liveVideos.forEach(v => {
-          if (!videoMap.has(v.slug) && v.status === "published") {
+          if (!videoMap.has(v.slug) && (v.status === "published" || !v.status)) {
             videoMap.set(v.slug, v);
           }
         });
@@ -137,7 +137,10 @@ export default function EnProgramsIndex() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {(programs as any[]).map((program: any) => {
-              const firstVideo = (videos as any[]).find((v: any) => v.programId === program.slug);
+              const firstVideo = (videos as any[]).find((v: any) => 
+                (v.programId === program.slug || v.programName === program.title || v.program === program.slug || v.program === program.title) &&
+                (v.status === "published" || !v.status)
+              );
               const fallbackThumbnail = firstVideo?.youtubeId ? getYouTubeThumbnail(firstVideo.youtubeId) : null;
               const displayThumbnail = program.coverImage || program.youtubeThumbnail || fallbackThumbnail;
 

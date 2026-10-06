@@ -72,7 +72,10 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   // Calculate episode counts per program
   const programCounts: Record<string, number> = {};
   programs.forEach((p: any) => {
-    programCounts[p.slug] = videosData.filter((v: any) => v.programId === p.slug).length;
+    programCounts[p.slug] = videosData.filter((v: any) => 
+      (v.programId === p.slug || v.programName === p.title || v.program === p.slug || v.program === p.title) &&
+      (v.status === 'published' || !v.status)
+    ).length;
   });
 
   // Load spotlight settings

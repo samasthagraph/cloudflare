@@ -37,12 +37,23 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           slug TEXT UNIQUE NOT NULL,
           title TEXT NOT NULL,
+          advanced_title TEXT,
           youtube_id TEXT,
           description TEXT,
+          body TEXT,
           category TEXT,
           thumbnail_url TEXT,
+          custom_thumbnail TEXT,
           duration TEXT,
+          author TEXT DEFAULT 'admin',
+          theme_preset TEXT DEFAULT 'theme-malayalam-standard',
           program_name TEXT,
+          program_id TEXT,
+          playlist TEXT,
+          episode_number INTEGER,
+          status TEXT DEFAULT 'published',
+          language TEXT DEFAULT 'ml',
+          translation_group_id TEXT,
           published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -100,6 +111,26 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `);
+
+      // Safe incremental column migrations for videos
+      const videoColumns = [
+        "ALTER TABLE videos ADD COLUMN advanced_title TEXT",
+        "ALTER TABLE videos ADD COLUMN body TEXT",
+        "ALTER TABLE videos ADD COLUMN custom_thumbnail TEXT",
+        "ALTER TABLE videos ADD COLUMN author TEXT DEFAULT 'admin'",
+        "ALTER TABLE videos ADD COLUMN theme_preset TEXT DEFAULT 'theme-malayalam-standard'",
+        "ALTER TABLE videos ADD COLUMN program_id TEXT",
+        "ALTER TABLE videos ADD COLUMN playlist TEXT",
+        "ALTER TABLE videos ADD COLUMN episode_number INTEGER",
+        "ALTER TABLE videos ADD COLUMN status TEXT DEFAULT 'published'",
+        "ALTER TABLE videos ADD COLUMN language TEXT DEFAULT 'ml'",
+        "ALTER TABLE videos ADD COLUMN translation_group_id TEXT"
+      ];
+      for (const colSql of videoColumns) {
+        try {
+          await db.prepare(colSql).run();
+        } catch (e) {}
+      }
 
       // Safe incremental column migrations for programs
       const programColumns = [
@@ -262,15 +293,26 @@ export async function getDbVideos(db?: D1Database): Promise<any[]> {
     return (results || []).map((row: any) => ({
       slug: row.slug,
       title: row.title,
+      advancedTitle: row.advanced_title || row.title,
       youtubeId: row.youtube_id,
       id: row.youtube_id,
-      description: row.description,
-      category: row.category,
-      thumbnailUrl: row.thumbnail_url,
-      thumbnail: row.thumbnail_url,
-      duration: row.duration,
-      program: row.program_name,
-      programName: row.program_name,
+      description: row.description || row.body || "",
+      body: row.body || row.description || "",
+      category: row.category || "General",
+      thumbnailUrl: row.thumbnail_url || row.custom_thumbnail,
+      thumbnail: row.thumbnail_url || row.custom_thumbnail,
+      customThumbnail: row.custom_thumbnail || row.thumbnail_url,
+      duration: row.duration || "",
+      author: row.author || "admin",
+      themePreset: row.theme_preset || "theme-malayalam-standard",
+      program: row.program_id || row.program_name,
+      programName: row.program_name || row.program_id,
+      programId: row.program_id || row.program_name,
+      playlist: row.playlist,
+      episodeNumber: row.episode_number,
+      status: row.status || "published",
+      language: row.language || "ml",
+      translationGroupId: row.translation_group_id,
       publishedAt: row.published_at,
       type: "video"
     }));
@@ -284,20 +326,38 @@ export async function getDbVideoBySlug(db: D1Database | undefined, slug: string)
   if (!db) return null;
   try {
     await ensureTablesExist(db);
-    const row: any = await db.prepare("SELECT * FROM videos WHERE slug = ?").bind(slug).first();
+    const row: any = await db.prepare(`
+      SELECT * FROM videos 
+      WHERE slug = ? 
+         OR youtube_id = ? 
+         OR slug = ? 
+         OR ('youtube-' || youtube_id) = ?
+      LIMIT 1
+    `).bind(slug, slug, `youtube-${slug}`, slug).first();
     if (!row) return null;
     return {
       slug: row.slug,
       title: row.title,
+      advancedTitle: row.advanced_title || row.title,
       youtubeId: row.youtube_id,
       id: row.youtube_id,
-      description: row.description,
-      category: row.category,
-      thumbnailUrl: row.thumbnail_url,
-      thumbnail: row.thumbnail_url,
-      duration: row.duration,
-      program: row.program_name,
-      programName: row.program_name,
+      description: row.description || row.body || "",
+      body: row.body || row.description || "",
+      category: row.category || "General",
+      thumbnailUrl: row.thumbnail_url || row.custom_thumbnail,
+      thumbnail: row.thumbnail_url || row.custom_thumbnail,
+      customThumbnail: row.custom_thumbnail || row.thumbnail_url,
+      duration: row.duration || "",
+      author: row.author || "admin",
+      themePreset: row.theme_preset || "theme-malayalam-standard",
+      program: row.program_id || row.program_name,
+      programName: row.program_name || row.program_id,
+      programId: row.program_id || row.program_name,
+      playlist: row.playlist,
+      episodeNumber: row.episode_number,
+      status: row.status || "published",
+      language: row.language || "ml",
+      translationGroupId: row.translation_group_id,
       publishedAt: row.published_at,
       type: "video"
     };
@@ -310,30 +370,61 @@ export async function getDbVideoBySlug(db: D1Database | undefined, slug: string)
 export async function saveDbVideo(db: D1Database, video: any): Promise<boolean> {
   try {
     await ensureTablesExist(db);
+    const progId = video.programId || video.program || video.programName || null;
+    const progName = video.programName || video.program || video.programId || "";
+    const epNum = (typeof video.episodeNumber === 'number' && !isNaN(video.episodeNumber)) 
+      ? video.episodeNumber 
+      : (video.episodeNumber ? parseInt(video.episodeNumber, 10) : null);
+    const customThumb = video.customThumbnail || video.thumbnailUrl || video.thumbnail || "";
+
     await db.prepare(`
       INSERT INTO videos (
-        slug, title, youtube_id, description, category,
-        thumbnail_url, duration, program_name, published_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        slug, title, advanced_title, youtube_id, description, body, category,
+        thumbnail_url, custom_thumbnail, duration, author, theme_preset,
+        program_name, program_id, playlist, episode_number, status, language,
+        translation_group_id, published_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(slug) DO UPDATE SET
         title = excluded.title,
+        advanced_title = excluded.advanced_title,
         youtube_id = excluded.youtube_id,
         description = excluded.description,
+        body = excluded.body,
         category = excluded.category,
         thumbnail_url = excluded.thumbnail_url,
+        custom_thumbnail = excluded.custom_thumbnail,
         duration = excluded.duration,
+        author = excluded.author,
+        theme_preset = excluded.theme_preset,
         program_name = excluded.program_name,
+        program_id = excluded.program_id,
+        playlist = excluded.playlist,
+        episode_number = excluded.episode_number,
+        status = excluded.status,
+        language = excluded.language,
+        translation_group_id = excluded.translation_group_id,
         published_at = excluded.published_at,
         updated_at = CURRENT_TIMESTAMP
     `).bind(
       video.slug,
       video.title || "",
+      video.advancedTitle || video.title || "",
       video.youtubeId || video.id || "",
-      video.description || "",
+      video.description || video.body || "",
+      video.body || video.description || "",
       video.category || "General",
-      video.thumbnailUrl || video.thumbnail || "",
+      video.thumbnailUrl || video.thumbnail || customThumb,
+      customThumb,
       video.duration || "",
-      video.program || video.programName || "",
+      video.author || "admin",
+      video.themePreset || "theme-malayalam-standard",
+      progName,
+      progId,
+      video.playlist || null,
+      (epNum !== null && !isNaN(epNum)) ? epNum : null,
+      video.status || "published",
+      video.language || "ml",
+      video.translationGroupId || null,
       video.publishedAt || new Date().toISOString()
     ).run();
     return true;
@@ -477,6 +568,33 @@ export async function getDbPrograms(db?: D1Database): Promise<any[]> {
   } catch (err) {
     console.warn("Error fetching programs from D1:", err);
     return [];
+  }
+}
+
+export async function getDbProgramBySlug(db: D1Database | undefined, slug: string): Promise<any | null> {
+  if (!db) return null;
+  try {
+    await ensureTablesExist(db);
+    const row: any = await db.prepare("SELECT * FROM programs WHERE slug = ?").bind(slug).first();
+    if (!row) return null;
+    return {
+      slug: row.slug,
+      title: row.title,
+      description: row.description,
+      coverImage: row.cover_image,
+      host: row.host,
+      category: row.category,
+      youtubePlaylistId: row.youtube_playlist_id,
+      youtubeThumbnail: row.youtube_thumbnail,
+      status: row.status || 'published',
+      language: row.language || 'ml',
+      translationGroupId: row.translation_group_id,
+      publishedAt: row.published_at || (row.created_at ? row.created_at.split('T')[0] : ''),
+      type: "program"
+    };
+  } catch (err) {
+    console.warn("Error fetching program by slug from D1:", err);
+    return null;
   }
 }
 
