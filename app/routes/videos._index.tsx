@@ -3,7 +3,6 @@ import { OptimizedImage } from "~/components/OptimizedImage";
 import { useLoaderData, Link } from "@remix-run/react";
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { isMalayalam } from "~/utils/language";
-import { CompactHero } from "~/components/CompactHero";
 import { extractYouTubeId, getYouTubeThumbnail, fetchYouTubePlaylistVideos } from "~/utils/youtube";
 import { Disc, Play, Calendar, ChevronRight, Layers, X, ExternalLink, Sparkles } from "lucide-react";
 import { getDbVideos, getDbPrograms } from "~/utils/db.server";
@@ -125,103 +124,14 @@ export default function Videos() {
   const upcomingVideos = allVideos.filter(v => v.status === 'scheduled');
 
   const [activeVideoPopup, setActiveVideoPopup] = useState<any>(null);
-  const [activePlaylistIndex, setActivePlaylistIndex] = useState(0);
 
   // Display the 8 most recent videos (arranged 4 per row)
   const recentEightVideos = publishedVideos.slice(0, 8);
 
-  const hasPlaylists = programs && programs.length > 0;
-  const currentProgram = hasPlaylists ? programs[activePlaylistIndex % programs.length] : null;
-
-  const currentFirstVideo = currentProgram ? (videos || []).find((v: any) => v.programId === currentProgram.slug) : null;
-  const currentThumbnail = currentProgram?.coverImage || currentProgram?.youtubeThumbnail || (currentFirstVideo?.youtubeId ? getYouTubeThumbnail(currentFirstVideo.youtubeId) : null);
-
   return (
     <div className="min-h-screen bg-[#eef3f1] font-sans text-gray-800 selection:bg-[#c8a136] selection:text-[#15664a]">
-
-      {/* Home-styled Spotlight Hero with Playlist Scrolling */}
-      <CompactHero
-        eyebrow={
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#c8a136] animate-pulse" />
-            Series Spotlight
-          </span>
-        }
-        title={
-          hasPlaylists ? (
-            currentProgram?.title
-          ) : (
-            <>Explore the <span className="text-[#c8a136]">Universe</span> of Knowledge.</>
-          )
-        }
-        subtitle={
-          hasPlaylists ? (currentProgram?.subtitle || "Special Series & Curated Playlists") : "Samastha Graph — Universe of Knowledge"
-        }
-        description={
-          hasPlaylists ? (currentProgram?.description || "Comprehensive knowledge series and curated YouTube playlists from Samastha Graph.") : "Dive into premium Islamic content, thought-provoking video podcasts, and enlightening series designed to inspire your spiritual journey."
-        }
-        actions={
-          <div className="flex flex-wrap gap-4 pt-2">
-            {hasPlaylists ? (
-              <>
-                <Link to={`/videos/programs/${currentProgram?.slug}`} className="bg-[#c8a136] text-[#15664a] font-bold px-8 py-3.5 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-[#c8a136]/20 inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-                  <Play size={16} fill="currentColor" /> Watch Series
-                </Link>
-                <a href="#shows-section" className="bg-transparent border-2 border-white/60 text-white font-semibold px-8 py-3.5 rounded-full hover:bg-white hover:text-[#15664a] transition-all inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-                  <Layers size={16} /> All Playlists
-                </a>
-              </>
-            ) : (
-              <>
-                {publishedVideos[0] && (
-                  <button onClick={() => setActiveVideoPopup(publishedVideos[0])} className="bg-[#c8a136] text-[#15664a] font-bold px-8 py-3.5 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-[#c8a136]/20 inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <Play size={16} fill="currentColor" /> Watch Latest
-                  </button>
-                )}
-                <a href="#shows-section" className="bg-transparent border-2 border-white/60 text-white font-semibold px-8 py-3.5 rounded-full hover:bg-white hover:text-[#15664a] transition-all inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-                  <Layers size={16} /> Explore Playlists
-                </a>
-              </>
-            )}
-          </div>
-        }
-        align="left"
-        onPrev={hasPlaylists && programs.length > 1 ? () => setActivePlaylistIndex((prev) => (prev - 1 + programs.length) % programs.length) : undefined}
-        onNext={hasPlaylists && programs.length > 1 ? () => setActivePlaylistIndex((prev) => (prev + 1) % programs.length) : undefined}
-        currentSlide={activePlaylistIndex % (programs.length || 1)}
-        totalSlides={programs.length}
-        onSelectSlide={(idx) => setActivePlaylistIndex(idx)}
-        sideContent={
-          hasPlaylists && currentProgram ? (
-            <Link to={`/videos/programs/${currentProgram.slug}`} className="relative group cursor-pointer block w-full text-left">
-              <div className="absolute inset-0 bg-[#c8a136] rounded-2xl transform rotate-3 scale-105 opacity-20 transition-transform group-hover:rotate-6"></div>
-              <div className="relative bg-black border border-[#2D5A46] rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
-                {currentThumbnail ? (
-                  <img src={currentThumbnail} alt={currentProgram.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" />
-                ) : (
-                  <div className="w-full h-full bg-[#133022] flex items-center justify-center">
-                    <span className="text-[#c8a136] text-xl font-bold">Featured Series</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#c8a136] rounded-full flex items-center justify-center text-[#15664a] shadow-[0_0_30px_rgba(200,161,54,0.5)] transform group-hover:scale-110 transition-transform duration-300">
-                    <Play size={28} className="ml-1" fill="currentColor" />
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/40 to-transparent">
-                  <span className="bg-[#15664a] text-white text-xs font-bold px-2.5 py-1 rounded mb-2 inline-block uppercase">
-                    Featured Series
-                  </span>
-                  <h3 className="font-heading font-bold text-lg text-white line-clamp-1">{currentProgram.title}</h3>
-                </div>
-              </div>
-            </Link>
-          ) : null
-        }
-      />
-
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-16">
 
         {/* SECTION 1: 8 Most Recent Videos (4 Per Row) */}
         <section>

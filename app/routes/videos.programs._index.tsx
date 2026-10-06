@@ -3,7 +3,6 @@ import { useLoaderData, Link } from "@remix-run/react";
 import { isMalayalam } from "~/utils/language";
 import { Layers, ChevronRight } from "lucide-react";
 import { getYouTubeThumbnail } from "~/utils/youtube";
-import { CompactHero } from "~/components/CompactHero";
 import { getDbPrograms, getDbVideos } from "~/utils/db.server";
 
 export const meta: MetaFunction = () => [
@@ -65,44 +64,17 @@ export default function ProgramsIndex() {
 
   return (
     <div className="min-h-screen bg-[#F7F5F0] font-sans text-[#18181B]">
-      {/* Home-styled Programs & Series Hero */}
-      <CompactHero
-        eyebrow="Curated Video Collections"
-        title={<>Programs &amp; <span className="text-[#c8a136]">Playlists</span>.</>}
-        subtitle="Curated Series, Thematic Playlists, and Comprehensive Educational Content"
-        description="Explore structured video learning series and YouTube playlist collections from Samastha Graph."
-        actions={
-          <div className="flex flex-wrap gap-4 pt-2">
-            <Link to="/videos" className="bg-[#c8a136] text-[#15664a] font-bold px-8 py-3.5 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-[#c8a136]/20 inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-              ← Back to All Videos
-            </Link>
-          </div>
-        }
-        align="left"
-        sideContent={
-          programs.length > 0 ? (
-            <Link to={`/videos/programs/${programs[0].slug}`} className="relative group cursor-pointer block w-full text-left">
-              <div className="absolute inset-0 bg-[#c8a136] rounded-2xl transform rotate-3 scale-105 opacity-20 transition-transform group-hover:rotate-6"></div>
-              <div className="relative bg-black border border-[#2D5A46] rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
-                {programs[0].coverImage || programs[0].youtubeThumbnail ? (
-                  <img src={programs[0].coverImage || programs[0].youtubeThumbnail} alt={programs[0].title} className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" />
-                ) : (
-                  <div className="w-full h-full bg-[#133022] flex items-center justify-center">
-                    <span className="text-[#c8a136] text-xl font-bold">Featured Playlist</span>
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/40 to-transparent">
-                  <span className="bg-[#15664a] text-white text-xs font-bold px-2.5 py-1 rounded mb-2 inline-block uppercase">Featured Series</span>
-                  <h3 className="font-heading font-bold text-lg text-white line-clamp-1">{programs[0].title}</h3>
-                </div>
-              </div>
-            </Link>
-          ) : null
-        }
-      />
-
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E4E4E7] pb-6 mb-8">
+          <div>
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-[#2D5A46]">Programs &amp; Playlists</h1>
+            <p className="text-[#52525B] text-sm mt-1">Browse all curated video series, YouTube playlists, and educational series.</p>
+          </div>
+          <Link to="/videos" className="self-start sm:self-auto text-xs font-bold uppercase tracking-wider text-[#2D5A46] bg-white border border-[#E4E4E7] px-5 py-2.5 rounded-full hover:border-[#c8a136] hover:text-[#c8a136] transition-all inline-flex items-center gap-1.5">
+            ← Back to All Videos
+          </Link>
+        </div>
         {programs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Layers size={48} className="text-[#2D5A46] opacity-30 mb-4" />

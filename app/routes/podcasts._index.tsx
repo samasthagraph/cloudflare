@@ -12,7 +12,6 @@ import { isMalayalam } from "~/utils/language";
 import { getCleanAudioUrl } from "~/utils/audio";
 import { fetchLiveSpotifyPodcasts, getPodcastShows, type PodcastShow, type PodcastEpisode } from "~/utils/podcasts.server";
 import podcastShowsConfig from "../content/settings/podcast-shows.json";
-import { CompactHero } from "~/components/CompactHero";
 import { getDbPodcasts, getDbSetting } from "~/utils/db.server";
 
 const DEFAULT_ARTWORK = "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46535697/46535697-1786530965061-a1e35ade3abba.jpg";
@@ -261,14 +260,6 @@ export default function Podcasts() {
     );
   }
 
-  const [activeHeroShowIndex, setActiveHeroShowIndex] = useState(0);
-  const featuredPodcast = podcasts[0];
-
-  const hasShows = shows && shows.length > 0;
-  const activeHeroShow = hasShows ? shows[activeHeroShowIndex % shows.length] : null;
-  const activeShowEpisode = activeHeroShow ? (podcasts.find((p: any) => p.showId === activeHeroShow.id || p.showTitle?.toLowerCase() === activeHeroShow.title?.toLowerCase() || p.showSlug === activeHeroShow.id) || featuredPodcast) : featuredPodcast;
-  const activeShowImage = activeHeroShow?.coverImage || (activeShowEpisode ? getShowImage(activeShowEpisode) : DEFAULT_ARTWORK);
-
   return (
     <div className="font-sans min-h-screen bg-[#eef3f1] text-[#2D5A46] pb-36 overflow-x-hidden selection:bg-[#c8a136] selection:text-[#2D5A46]">
       {/* Hidden Audio Engine */}
@@ -283,107 +274,8 @@ export default function Podcasts() {
         />
       )}
 
-      {/* Home-styled Podcast Hero with Show Scrolling */}
-      <CompactHero
-        eyebrow={
-          <span className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#c8a136]" />
-            Podcast Show Spotlight • Spotify Podcasts
-          </span>
-        }
-        title={
-          hasShows && activeHeroShow ? (
-            activeHeroShow.title
-          ) : (
-            <>Listen. Learn. <span className="text-[#c8a136]">Stay Connected.</span></>
-          )
-        }
-        subtitle={
-          hasShows && activeHeroShow ? (activeHeroShow.tagline || activeHeroShow.subtitle || "Podcasts — Voices of Spiritual Reflection & Knowledge") : "Podcasts — Voices of Spiritual Reflection & Knowledge"
-        }
-        description={
-          hasShows && activeHeroShow ? (activeHeroShow.description || "Explore premium conversations, deep reflections, and exclusive podcast shows crafted to inspire your spiritual journey on Spotify.") : "Explore premium conversations, deep reflections, and exclusive podcast shows crafted to inspire your spiritual journey on Spotify."
-        }
-        actions={
-          <div className="flex flex-wrap items-center gap-4 pt-2">
-            {activeShowEpisode && (
-              <button
-                onClick={() => handlePlayEpisode(activeShowEpisode)}
-                className="bg-[#c8a136] text-[#15664a] font-bold px-8 py-3.5 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-[#c8a136]/20 inline-flex items-center gap-2.5 text-sm uppercase tracking-wider"
-              >
-                {currentPlayingEpisode?.slug === activeShowEpisode.slug && isPlaying ? (
-                  <>
-                    <Pause size={18} className="fill-current" /> Pause Episode
-                  </>
-                ) : (
-                  <>
-                    <Play size={18} className="fill-current ml-0.5" /> Play Episode
-                  </>
-                )}
-              </button>
-            )}
-            {activeHeroShow?.spotifyUrl ? (
-              <a
-                href={activeHeroShow.spotifyUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-transparent border-2 border-white/60 text-white font-semibold px-8 py-3.5 rounded-full hover:bg-white hover:text-[#15664a] transition-all inline-flex items-center gap-2 text-sm uppercase tracking-wider"
-              >
-                <SiSpotify size={16} /> Open on Spotify
-              </a>
-            ) : (
-              <a href="#shows-section" className="bg-transparent border-2 border-white/60 text-white font-semibold px-8 py-3.5 rounded-full hover:bg-white hover:text-[#15664a] transition-all inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-                <Headphones size={16} /> All Shows
-              </a>
-            )}
-          </div>
-        }
-        align="left"
-        onPrev={hasShows && shows.length > 1 ? () => setActiveHeroShowIndex((prev) => (prev - 1 + shows.length) % shows.length) : undefined}
-        onNext={hasShows && shows.length > 1 ? () => setActiveHeroShowIndex((prev) => (prev + 1) % shows.length) : undefined}
-        currentSlide={activeHeroShowIndex % (shows.length || 1)}
-        totalSlides={shows.length}
-        onSelectSlide={(idx) => setActiveHeroShowIndex(idx)}
-        sideContent={
-          <div className="relative group cursor-pointer block w-full text-left" onClick={() => activeShowEpisode && handlePlayEpisode(activeShowEpisode)}>
-            <div className="absolute inset-0 bg-[#c8a136] rounded-2xl transform rotate-3 scale-105 opacity-20 transition-transform group-hover:rotate-6"></div>
-            <div className="relative bg-black border border-[#2D5A46] rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
-              <img
-                src={activeShowImage}
-                alt={activeHeroShow?.title || featuredPodcast.title}
-                className="w-full h-full object-cover opacity-70 group-hover:opacity-50 transition-opacity"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#c8a136] rounded-full flex items-center justify-center text-[#15664a] shadow-[0_0_30px_rgba(200,161,54,0.5)] transform group-hover:scale-110 transition-transform duration-300">
-                  {currentPlayingEpisode?.slug === activeShowEpisode?.slug && isPlaying ? (
-                    <Pause size={28} className="fill-current" />
-                  ) : (
-                    <Play size={28} className="ml-1 fill-current" />
-                  )}
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/40 to-transparent">
-                <span className="bg-[#15664a] text-white text-xs font-bold px-2.5 py-1 rounded mb-2 inline-block uppercase">
-                  {activeHeroShow?.title || activeShowEpisode?.showTitle || 'Featured Show'}
-                </span>
-                {activeHeroShow ? (
-                  <h3 className="font-heading font-bold text-lg text-white line-clamp-1">{activeHeroShow.title}</h3>
-                ) : (
-                  <Link to={featuredPodcast.slug} onClick={(e) => e.stopPropagation()} className="block hover:text-[#c8a136] transition-colors">
-                    <h3 className="font-heading font-bold text-lg text-white line-clamp-1">{featuredPodcast.title}</h3>
-                  </Link>
-                )}
-                {(activeHeroShow?.description || activeShowEpisode?.description) && (
-                  <p className="text-xs text-gray-300 mt-1 line-clamp-1">{activeHeroShow?.description || activeShowEpisode?.description}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        }
-      />
-
       {/* Shows & Series Showcase Section (Playlist style) */}
-      <section id="shows-section" className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="shows-section" className="pt-10 sm:pt-14 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-bold text-[#c8a136] uppercase tracking-widest mb-2">

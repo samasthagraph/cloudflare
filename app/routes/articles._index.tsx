@@ -4,7 +4,6 @@ import { useState } from "react";
 import fm from "front-matter";
 import { OptimizedImage } from "~/components/OptimizedImage";
 import { isMalayalam } from "~/utils/language";
-import { CompactHero } from "~/components/CompactHero";
 import { getDbArticles } from "~/utils/db.server";
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
@@ -64,54 +63,7 @@ export default function ArticlesIndex() {
 
   return (
     <div className="bg-brand-light min-h-screen pb-20">
-      <CompactHero 
-        eyebrow="Official News & Publications"
-        title={<>The <span className="text-[#c8a136]">Newsroom</span> &amp; Heritage.</>}
-        subtitle="News, In-Depth Articles & Historical Chronicles"
-        description="Official announcements, deep heritage stories, editorial articles, and the latest releases from the Samastha community."
-        actions={
-          <div className="flex flex-wrap gap-4 pt-2">
-            {featuredArticle && (
-              <Link to={`/articles/${featuredArticle.slug}`} className="bg-[#c8a136] text-[#15664a] font-bold px-8 py-3.5 rounded-full hover:bg-yellow-500 transition-all shadow-lg shadow-[#c8a136]/20 inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-                Read Featured Article →
-              </Link>
-            )}
-            <a href="#article-archive" className="bg-transparent border-2 border-white/60 text-white font-semibold px-8 py-3.5 rounded-full hover:bg-white hover:text-[#15664a] transition-all inline-flex items-center gap-2 text-sm uppercase tracking-wider">
-              Browse Categories
-            </a>
-          </div>
-        }
-        align="left"
-        sideContent={
-          featuredArticle ? (
-            <Link to={`/articles/${featuredArticle.slug}`} className="relative group cursor-pointer block w-full text-left">
-              <div className="absolute inset-0 bg-[#c8a136] rounded-2xl transform rotate-3 scale-105 opacity-20 transition-transform group-hover:rotate-6"></div>
-              <div className="relative bg-black border border-[#2D5A46] rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
-                {featuredArticle.coverImage ? (
-                  <OptimizedImage src={featuredArticle.coverImage} alt={featuredArticle.title} priority={true} className="w-full h-full object-cover opacity-75 group-hover:opacity-60 transition-opacity" />
-                ) : (
-                  <div className="w-full h-full bg-[#133022] flex items-center justify-center">
-                    <span className="text-[#c8a136] text-xl font-bold font-heading">Samastha Graph</span>
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/40 to-transparent">
-                  <span className="bg-[#15664a] text-white text-xs font-bold px-2.5 py-1 rounded mb-2 inline-block uppercase">
-                    {featuredArticle.category || 'Featured Article'}
-                  </span>
-                  <h3 className="font-heading font-bold text-lg text-white line-clamp-1 group-hover:text-[#c8a136] transition-colors">
-                    {featuredArticle.title}
-                  </h3>
-                  {featuredArticle.excerpt && (
-                    <p className="text-xs text-gray-300 mt-1 line-clamp-1">{featuredArticle.excerpt}</p>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ) : null
-        }
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14 relative z-20">
         
         <div className="flex overflow-x-auto no-scrollbar gap-3 pb-8 items-center justify-center sm:justify-center">
           {categories.map((category: unknown) => (
