@@ -61,26 +61,31 @@ export const loader = async ({ params, context, request }: any) => {
   const githubOwner = env.GITHUB_OWNER || "samasthagraph";
   const githubRepo = env.GITHUB_REPO || "cloudflare";
 
-  const localPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-  const localMap = new Map();
-  Object.entries(localPodcasts).forEach(([path, content]: any) => {
-    const s = path.split('/').pop()?.replace('.json', '');
-    localMap.set(s, { slug: s, ...content });
-  });
-
   const dbPodcasts = await getDbPodcasts(env?.DB);
-  dbPodcasts.forEach((p: any) => {
-    if (p.slug) localMap.set(p.slug, p);
-  });
+  const localMap = new Map();
+
+  if (env?.DB) {
+    (dbPodcasts || []).forEach((p: any) => {
+      if (p.slug) localMap.set(p.slug, p);
+    });
+  } else {
+    const localPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+    Object.entries(localPodcasts).forEach(([path, content]: any) => {
+      const s = path.split('/').pop()?.replace('.json', '');
+      localMap.set(s, { slug: s, ...content });
+    });
+  }
 
   try {
     const liveEpisodes = await fetchLiveSpotifyPodcasts();
-    liveEpisodes.forEach(ep => localMap.set(ep.slug, ep));
+    liveEpisodes.forEach(ep => {
+      if (!localMap.has(ep.slug)) localMap.set(ep.slug, ep);
+    });
   } catch (e) {
     console.error("Live Spotify podcast fetch error in English detail:", e);
   }
 
-  if (githubToken) {
+  if (githubToken && !env?.DB) {
     try {
       const fetchFolder = async (folder: string) => {
         const res = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/contents/app/content/${folder}?ref=main`, {

@@ -20,41 +20,50 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     getDbVideos(env?.DB)
   ]);
 
-  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
-  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
-    slug: path.split("/").pop()?.replace(".json", ""),
-    ...content,
-  }));
+  let programs: any[] = [];
+  let videos: any[] = [];
 
-  const programMap = new Map<string, any>();
-  staticPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
-  dbPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+  if (env?.DB) {
+    programs = (dbPrograms || [])
+      .filter(isMalayalam)
+      .filter((p: any) => p.status === "published");
+    videos = (dbVideos || []).filter((v: any) => v.status === "published");
+  } else {
+    const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+    programs = Object.entries(programsGlob).map(([path, content]: any) => ({
+      slug: path.split("/").pop()?.replace(".json", ""),
+      ...content,
+    }))
+      .filter(isMalayalam)
+      .filter((p: any) => p.status === "published");
 
-  const programs = Array.from(programMap.values())
-    .filter(isMalayalam)
-    .filter((p: any) => p.status === "published")
-    .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-  let liveVideos: any[] = [];
-  try {
-    const { fetchLiveYouTubeVideos } = await import("~/utils/youtube");
-    liveVideos = await fetchLiveYouTubeVideos(programs);
-  } catch (e) {
-    console.warn("Failed to fetch live YouTube playlist videos:", e);
+    const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
+    videos = Object.entries(videosGlob).map(([path, content]: any) => ({
+      slug: path.split("/").pop()?.replace(".json", ""),
+      ...content,
+    })).filter((v: any) => v.status === "published");
   }
 
-  const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
-  const staticVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
-    slug: path.split("/").pop()?.replace(".json", ""),
-    ...content,
-  }));
+  programs.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  const videoMap = new Map<string, any>();
-  staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-  dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-  liveVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-
-  const videos = Array.from(videoMap.values()).filter((v: any) => v.status === "published");
+  if (programs.length > 0) {
+    try {
+      const { fetchLiveYouTubeVideos } = await import("~/utils/youtube");
+      const liveVideos = await fetchLiveYouTubeVideos(programs);
+      if (liveVideos.length > 0) {
+        const videoMap = new Map<string, any>();
+        videos.forEach(v => videoMap.set(v.slug, v));
+        liveVideos.forEach(v => {
+          if (!videoMap.has(v.slug) && v.status === "published") {
+            videoMap.set(v.slug, v);
+          }
+        });
+        videos = Array.from(videoMap.values());
+      }
+    } catch (e) {
+      console.warn("Failed to fetch live YouTube playlist videos:", e);
+    }
+  }
 
   return json({ programs, videos }, {
     headers: { "Cache-Control": "public, max-age=0, must-revalidate" }

@@ -37,19 +37,36 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
   ]);
 
   // Static articles
-  const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-  const staticArticles = Object.entries(mdxFiles).map(([path, content]) => {
-    const fileSlug = path.split('/').pop()?.replace('.mdx', '');
-    const { attributes } = fm(content as string);
-    return { slug: fileSlug, ...(attributes as any) };
-  });
+  let allArticlesRaw: any[] = [];
+  let allVideosRaw: any[] = [];
+  let allPodcastsRaw: any[] = [];
 
-  const articleMap = new Map<string, any>();
-  staticArticles.forEach(a => { if (a.slug) articleMap.set(a.slug, a); });
-  dbArticles.forEach(a => { if (a.slug) articleMap.set(a.slug, a); });
+  if (env?.DB) {
+    allArticlesRaw = (dbArticles || []).filter((a: any) => a.status !== 'draft');
+    allVideosRaw = (dbVideos || []).filter((v: any) => v.status !== 'draft');
+    allPodcastsRaw = (dbPodcasts || []).filter((p: any) => p.status !== 'draft');
+  } else {
+    const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+    allArticlesRaw = Object.entries(mdxFiles).map(([path, content]) => {
+      const fileSlug = path.split('/').pop()?.replace('.mdx', '');
+      const { attributes } = fm(content as string);
+      return { slug: fileSlug, ...(attributes as any) };
+    }).filter((a: any) => a.status !== 'draft');
 
-  const allArticles = Array.from(articleMap.values())
-    .filter((a: any) => a.status !== 'draft')
+    const videosJson = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
+    allVideosRaw = Object.entries(videosJson).map(([path, content]: any) => ({
+      slug: path.split('/').pop()?.replace('.json', ''),
+      ...content
+    })).filter((v: any) => v.status !== 'draft');
+
+    const podcastsJson = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+    allPodcastsRaw = Object.entries(podcastsJson).map(([path, content]: any) => ({
+      slug: path.split('/').pop()?.replace('.json', ''),
+      ...content
+    })).filter((p: any) => p.status !== 'draft');
+  }
+
+  const allArticles = allArticlesRaw
     .filter((a: any) => {
       const match = a.author === author.id || 
                     a.author?.toLowerCase() === author.name?.toLowerCase() ||
@@ -58,19 +75,7 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
     })
     .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  // Static videos
-  const videosJson = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-  const staticVideos = Object.entries(videosJson).map(([path, content]: any) => ({
-    slug: path.split('/').pop()?.replace('.json', ''),
-    ...content
-  }));
-
-  const videoMap = new Map<string, any>();
-  staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-  dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-
-  const allVideos = Array.from(videoMap.values())
-    .filter((v: any) => v.status !== 'draft')
+  const allVideos = allVideosRaw
     .filter((v: any) => {
       const match = v.author === author.id || 
                     v.author?.toLowerCase() === author.name?.toLowerCase() ||
@@ -79,19 +84,7 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
     })
     .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  // Static podcasts
-  const podcastsJson = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-  const staticPodcasts = Object.entries(podcastsJson).map(([path, content]: any) => ({
-    slug: path.split('/').pop()?.replace('.json', ''),
-    ...content
-  }));
-
-  const podcastMap = new Map<string, any>();
-  staticPodcasts.forEach(p => { if (p.slug) podcastMap.set(p.slug, p); });
-  dbPodcasts.forEach(p => { if (p.slug) podcastMap.set(p.slug, p); });
-
-  const allPodcasts = Array.from(podcastMap.values())
-    .filter((p: any) => p.status !== 'draft')
+  const allPodcasts = allPodcastsRaw
     .filter((p: any) => {
       const match = p.author === author.id || 
                     p.author?.toLowerCase() === author.name?.toLowerCase() ||

@@ -20,22 +20,20 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = ctx?.cloudflare?.env || ctx?.env || (typeof process !== 'undefined' ? process.env : {});
   const dbArticles = await getDbArticles(env?.DB);
 
-  const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-  const staticArticles = Object.entries(mdxFiles).map(([path, content]) => {
-    const slug = path.split('/').pop()?.replace('.mdx', '');
-    const { attributes } = fm(content as string);
-    return {
-      slug,
-      ...(attributes as any)
-    };
-  });
-
-  const map = new Map<string, any>();
-  staticArticles.forEach(a => { if (a.slug) map.set(a.slug, a); });
-  dbArticles.forEach(a => { if (a.slug) map.set(a.slug, a); });
-
-  const articlesData = Array.from(map.values())
-    .filter((a: any) => a.status !== 'draft' && isMalayalam(a));
+  let articlesData: any[] = [];
+  if (env?.DB) {
+    articlesData = (dbArticles || []).filter((a: any) => a.status !== 'draft' && isMalayalam(a));
+  } else {
+    const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+    articlesData = Object.entries(mdxFiles).map(([path, content]) => {
+      const slug = path.split('/').pop()?.replace('.mdx', '');
+      const { attributes } = fm(content as string);
+      return {
+        slug,
+        ...(attributes as any)
+      };
+    }).filter((a: any) => a.status !== 'draft' && isMalayalam(a));
+  }
 
   const articles = articlesData.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 

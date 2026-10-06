@@ -33,37 +33,36 @@ export const loader = async ({ params, context }: any) => {
     getDbVideos(env?.DB)
   ]);
 
-  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
-  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
-    slug: path.split("/").pop()?.replace(".json", ""),
-    ...content,
-  }));
+  let allPrograms: any[] = [];
+  let allVideos: any[] = [];
 
-  const programMap = new Map<string, any>();
-  staticPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
-  dbPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
+  if (env?.DB) {
+    allPrograms = dbPrograms || [];
+    allVideos = dbVideos || [];
+  } else {
+    const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+    allPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+      slug: path.split("/").pop()?.replace(".json", ""),
+      ...content,
+    }));
+
+    const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
+    allVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
+      slug: path.split("/").pop()?.replace(".json", ""),
+      ...content,
+    }));
+  }
 
   // Find the matching English published program
-  const program = Array.from(programMap.values())
-    .find((p: any) => p.slug === slug && isEnglish(p) && p.status === "published");
+  const program = allPrograms.find((p: any) => p.slug === slug && isEnglish(p) && p.status === "published");
 
   if (!program) {
     throw new Response(null, { status: 404 });
   }
 
   // Load videos belonging to this program
-  const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
-  const staticVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
-    slug: path.split("/").pop()?.replace(".json", ""),
-    ...content,
-  }));
-
-  const videoMap = new Map<string, any>();
-  staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-  dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-
-  let episodeVideos = Array.from(videoMap.values())
-    .filter((v: any) => isEnglish(v) && v.status === "published" && v.programId === program.slug);
+  let episodeVideos = allVideos
+    .filter((v: any) => isEnglish(v) && v.status === "published" && (v.programId === program.slug || v.programName === program.title || v.program === program.slug));
 
   // If program has a YouTube playlist ID, dynamically fetch any additional videos from the YouTube playlist feed
   if (program.youtubePlaylistId) {

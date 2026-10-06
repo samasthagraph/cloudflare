@@ -19,72 +19,64 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     getDbSetting(env?.DB, "podcast-platforms")
   ]);
 
-  const mdxArticles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-  const staticArticles = Object.entries(mdxArticles).map(([path, content]) => {
-    const slug = path.split('/').pop()?.replace('.mdx', '');
-    const { attributes } = fm(content as string);
-    return { slug, ...(attributes as any) };
-  });
+  let articlesData: any[] = [];
+  let allPrograms: any[] = [];
+  let videosData: any[] = [];
+  let podcastsData: any[] = [];
 
-  const articleMap = new Map<string, any>();
-  staticArticles.forEach(a => { if (a.slug) articleMap.set(a.slug, a); });
-  dbArticles.forEach(a => { if (a.slug) articleMap.set(a.slug, a); });
+  if (env?.DB) {
+    articlesData = (dbArticles || []).filter((a: any) => a.status !== 'draft' && isEnglish(a));
+    allPrograms = (dbPrograms || []).filter((p: any) => p.status === 'published' || !p.status);
+    videosData = (dbVideos || []).filter((v: any) => v.status !== 'draft' && isEnglish(v));
+    podcastsData = (dbPodcasts || []).filter((p: any) => p.status !== 'draft' && isEnglish(p));
+  } else {
+    const mdxArticles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+    articlesData = Object.entries(mdxArticles).map(([path, content]) => {
+      const slug = path.split('/').pop()?.replace('.mdx', '');
+      const { attributes } = fm(content as string);
+      return { slug, ...(attributes as any) };
+    }).filter((a: any) => a.status !== 'draft' && isEnglish(a));
 
-  const articlesData = Array.from(articleMap.values())
-    .filter((a: any) => a.status !== 'draft' && isEnglish(a))
-    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+    const jsonPrograms = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
+    allPrograms = Object.entries(jsonPrograms).map(([path, content]: any) => ({
+      slug: path.split('/').pop()?.replace('.json', ''),
+      ...content
+    }));
 
-  // 2. Videos & Programs
-  const jsonPrograms = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
-  const staticPrograms = Object.entries(jsonPrograms).map(([path, content]: any) => ({
-    slug: path.split('/').pop()?.replace('.json', ''),
-    ...content
-  }));
-  const programMap = new Map<string, any>();
-  staticPrograms.forEach(p => { if (p.slug) programMap.set(p.slug, p); });
-  dbPrograms.forEach((p: any) => { if (p.slug) programMap.set(p.slug, p); });
-  const allPrograms = Array.from(programMap.values());
+    const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
+    videosData = Object.entries(jsonVideos).map(([path, content]: any) => ({
+      slug: path.split('/').pop()?.replace('.json', ''),
+      ...content
+    })).filter((v: any) => v.status !== 'draft' && isEnglish(v));
 
-  let liveVideos: any[] = [];
-  try {
-    liveVideos = await fetchLiveYouTubeVideos(allPrograms);
-  } catch (e) {
-    console.warn("Failed to fetch live YouTube videos in en._index:", e);
+    const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+    podcastsData = Object.entries(jsonPodcasts).map(([path, content]: any) => ({
+      slug: path.split('/').pop()?.replace('.json', ''),
+      ...content
+    })).filter((p: any) => p.status !== 'draft' && isEnglish(p));
   }
 
-  const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-  const staticVideos = Object.entries(jsonVideos).map(([path, content]: any) => {
-    return { slug: path.split('/').pop()?.replace('.json', ''), ...content };
-  });
+  articlesData.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  podcastsData.sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
 
-  const videoMap = new Map<string, any>();
-  staticVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-  dbVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-  liveVideos.forEach(v => { if (v.slug) videoMap.set(v.slug, v); });
-
-  const videosData = Array.from(videoMap.values())
-    .filter((v: any) => v.status !== 'draft' && isEnglish(v))
-    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-  // 3. Podcasts
-  let livePodcasts: any[] = [];
-  try {
-    livePodcasts = await fetchLiveSpotifyPodcasts();
-  } catch (e) { }
-
-  const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-  const staticPodcasts = Object.entries(jsonPodcasts).map(([path, content]: any) => {
-    return { slug: path.split('/').pop()?.replace('.json', ''), ...content };
-  });
-
-  const podcastMap = new Map<string, any>();
-  staticPodcasts.forEach(p => podcastMap.set(p.slug, p));
-  dbPodcasts.forEach(p => podcastMap.set(p.slug, p));
-  livePodcasts.forEach(ep => podcastMap.set(ep.slug, ep));
-
-  const podcastsData = Array.from(podcastMap.values())
-    .filter((p: any) => p.status !== 'draft' && isEnglish(p))
-    .sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
+  if (allPrograms.length > 0) {
+    try {
+      const liveVideos = await fetchLiveYouTubeVideos(allPrograms);
+      if (liveVideos.length > 0) {
+        const videoMap = new Map<string, any>();
+        videosData.forEach(v => videoMap.set(v.slug, v));
+        liveVideos.forEach(v => {
+          if (!videoMap.has(v.slug) && isEnglish(v) && v.status !== 'draft') {
+            videoMap.set(v.slug, v);
+          }
+        });
+        videosData = Array.from(videoMap.values());
+      }
+    } catch (e) {
+      console.warn("Failed to fetch live YouTube videos in en._index:", e);
+    }
+  }
+  videosData.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
   // 4. Settings
   let homepageSettings = dbHomepage;

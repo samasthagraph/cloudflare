@@ -19,18 +19,17 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
 
   const authors = dbAuthorsData?.authors || [];
 
-  // Static articles
-  const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-  const staticArticles = Object.entries(mdxFiles).map(([path, content]) => {
-    const fileSlug = path.split('/').pop()?.replace('.mdx', '');
-    const { attributes } = fm(content as string);
-    return { slug: fileSlug, ...(attributes as any) };
-  });
-
-  const articleMap = new Map<string, any>();
-  staticArticles.forEach(a => { if (a.slug) articleMap.set(a.slug, a); });
-  dbArticles.forEach(a => { if (a.slug) articleMap.set(a.slug, a); });
-  const allArticles = Array.from(articleMap.values()).filter((a: any) => a.status !== 'draft');
+  let allArticles: any[] = [];
+  if (env?.DB) {
+    allArticles = (dbArticles || []).filter((a: any) => a.status !== 'draft');
+  } else {
+    const mdxFiles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+    allArticles = Object.entries(mdxFiles).map(([path, content]) => {
+      const fileSlug = path.split('/').pop()?.replace('.mdx', '');
+      const { attributes } = fm(content as string);
+      return { slug: fileSlug, ...(attributes as any) };
+    }).filter((a: any) => a.status !== 'draft');
+  }
 
   // Compute counts for each author
   const authorsWithCounts = authors.map((author: any) => {

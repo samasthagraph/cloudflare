@@ -54,58 +54,61 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     getDbPrograms(env?.DB)
   ]);
 
-  // Load Static Files
-  const articlesJson = import.meta.glob("../content/articles/*.json", { import: 'default', eager: true });
-  const articlesMdx = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-  
-  const videosJson = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-  const videosMdx = import.meta.glob("../content/videos/*.mdx", { query: '?raw', import: 'default', eager: true });
-  
-  const programsJson = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
-  
-  const podcastsJson = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-  const podcastsMdx = import.meta.glob("../content/podcasts/*.mdx", { query: '?raw', import: 'default', eager: true });
-
   const articleMap = new Map<string, any>();
   const videoMap = new Map<string, any>();
   const programMap = new Map<string, any>();
   const podcastMap = new Map<string, any>();
 
-  Object.entries(articlesJson).forEach(([path, content]) => {
-    const slug = path.split('/').pop()?.replace('.json', '') || '';
-    articleMap.set(slug, content);
-  });
-  Object.entries(articlesMdx).forEach(([path, content]) => {
-    const slug = path.split('/').pop()?.replace('.mdx', '') || '';
-    articleMap.set(slug, parseMdx(content as string));
-  });
-  dbArticles.forEach((a: any) => { if (a.slug) articleMap.set(a.slug, a); });
+  if (env?.DB) {
+    (dbArticles || []).forEach((a: any) => { if (a.slug) articleMap.set(a.slug, a); });
+    (dbVideos || []).forEach((v: any) => { if (v.slug) videoMap.set(v.slug, v); });
+    (dbPrograms || []).forEach((p: any) => { if (p.slug) programMap.set(p.slug, p); });
+    (dbPodcasts || []).forEach((p: any) => { if (p.slug) podcastMap.set(p.slug, p); });
+  } else {
+    // Load Static Files
+    const articlesJson = import.meta.glob("../content/articles/*.json", { import: 'default', eager: true });
+    const articlesMdx = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+    
+    const videosJson = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
+    const videosMdx = import.meta.glob("../content/videos/*.mdx", { query: '?raw', import: 'default', eager: true });
+    
+    const programsJson = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
+    
+    const podcastsJson = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+    const podcastsMdx = import.meta.glob("../content/podcasts/*.mdx", { query: '?raw', import: 'default', eager: true });
 
-  Object.entries(videosJson).forEach(([path, content]: any) => {
-    const slug = path.split('/').pop()?.replace('.json', '') || '';
-    videoMap.set(slug, content);
-  });
-  Object.entries(videosMdx).forEach(([path, content]) => {
-    const slug = path.split('/').pop()?.replace('.mdx', '') || '';
-    videoMap.set(slug, parseMdx(content as string));
-  });
-  dbVideos.forEach((v: any) => { if (v.slug) videoMap.set(v.slug, v); });
+    Object.entries(articlesJson).forEach(([path, content]) => {
+      const slug = path.split('/').pop()?.replace('.json', '') || '';
+      articleMap.set(slug, content);
+    });
+    Object.entries(articlesMdx).forEach(([path, content]) => {
+      const slug = path.split('/').pop()?.replace('.mdx', '') || '';
+      articleMap.set(slug, parseMdx(content as string));
+    });
 
-  Object.entries(programsJson).forEach(([path, content]: any) => {
-    const slug = path.split('/').pop()?.replace('.json', '') || '';
-    programMap.set(slug, content);
-  });
-  dbPrograms.forEach((p: any) => { if (p.slug) programMap.set(p.slug, p); });
+    Object.entries(videosJson).forEach(([path, content]: any) => {
+      const slug = path.split('/').pop()?.replace('.json', '') || '';
+      videoMap.set(slug, content);
+    });
+    Object.entries(videosMdx).forEach(([path, content]) => {
+      const slug = path.split('/').pop()?.replace('.mdx', '') || '';
+      videoMap.set(slug, parseMdx(content as string));
+    });
 
-  Object.entries(podcastsJson).forEach(([path, content]: any) => {
-    const slug = path.split('/').pop()?.replace('.json', '') || '';
-    podcastMap.set(slug, content);
-  });
-  Object.entries(podcastsMdx).forEach(([path, content]) => {
-    const slug = path.split('/').pop()?.replace('.mdx', '') || '';
-    podcastMap.set(slug, parseMdx(content as string));
-  });
-  dbPodcasts.forEach((p: any) => { if (p.slug) podcastMap.set(p.slug, p); });
+    Object.entries(programsJson).forEach(([path, content]: any) => {
+      const slug = path.split('/').pop()?.replace('.json', '') || '';
+      programMap.set(slug, content);
+    });
+
+    Object.entries(podcastsJson).forEach(([path, content]: any) => {
+      const slug = path.split('/').pop()?.replace('.json', '') || '';
+      podcastMap.set(slug, content);
+    });
+    Object.entries(podcastsMdx).forEach(([path, content]) => {
+      const slug = path.split('/').pop()?.replace('.mdx', '') || '';
+      podcastMap.set(slug, parseMdx(content as string));
+    });
+  }
 
   const processEntries = (map: Map<string, any>, type: SearchResult['type'], urlPrefix: string) => {
     map.forEach((data, slug) => {

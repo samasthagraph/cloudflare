@@ -55,28 +55,36 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   const shows: PodcastShow[] = getPodcastShows(showsSource);
 
   let liveEpisodes: PodcastEpisode[] = [];
-  try {
-    liveEpisodes = await fetchLiveSpotifyPodcasts(shows);
-  } catch (e) {
-    console.error("Failed to fetch live Spotify podcasts in loader:", e);
+  if (shows && shows.length > 0) {
+    try {
+      liveEpisodes = await fetchLiveSpotifyPodcasts(shows);
+    } catch (e) {
+      console.error("Failed to fetch live Spotify podcasts in loader:", e);
+    }
   }
 
-  const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-  const localData = Object.entries(jsonPodcasts).map(([path, content]: any) => {
-    return { slug: path.split('/').pop()?.replace('.json', ''), ...content };
-  });
+  let podcastsData: any[] = [];
+  if (env?.DB) {
+    const map = new Map<string, any>();
+    (dbPodcasts || []).forEach(ep => map.set(ep.slug, ep));
+    liveEpisodes.forEach(ep => {
+      if (!map.has(ep.slug)) map.set(ep.slug, ep);
+    });
+    podcastsData = Array.from(map.values()).filter((p: any) => p.status !== 'draft' && isMalayalam(p));
+  } else {
+    const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+    const localData = Object.entries(jsonPodcasts).map(([path, content]: any) => {
+      return { slug: path.split('/').pop()?.replace('.json', ''), ...content };
+    });
+    const map = new Map<string, any>();
+    localData.forEach(ep => map.set(ep.slug, ep));
+    liveEpisodes.forEach(ep => {
+      if (!map.has(ep.slug)) map.set(ep.slug, ep);
+    });
+    podcastsData = Array.from(map.values()).filter((p: any) => p.status !== 'draft' && isMalayalam(p));
+  }
 
-  const map = new Map<string, any>();
-  // Local first
-  localData.forEach(ep => map.set(ep.slug, ep));
-  // D1 overrides
-  dbPodcasts.forEach(ep => map.set(ep.slug, ep));
-  // Live overrides/augments
-  liveEpisodes.forEach(ep => map.set(ep.slug, ep));
-
-  const podcastsData = Array.from(map.values())
-    .filter((p: any) => p.status !== 'draft' && isMalayalam(p))
-    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  podcastsData.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
   return json({ podcasts: podcastsData, shows }, {
     headers: { "Cache-Control": "public, max-age=0, must-revalidate" }

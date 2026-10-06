@@ -59,20 +59,47 @@ export const loader = async ({ params, context, request }: any) => {
   const githubOwner = env.GITHUB_OWNER || "samasthagraph";
   const githubRepo = env.GITHUB_REPO || "cloudflare";
 
-  const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-  const mdxVideos = import.meta.glob("../content/videos/*.mdx", { query: '?raw', import: 'default', eager: true });
-  
-  const localMap = new Map();
-  Object.entries(jsonVideos).forEach(([path, content]: any) => {
-    const s = path.split('/').pop()?.replace('.json', '');
-    localMap.set(s, { slug: s, ...content });
-  });
-  const dbVideos = await getDbVideos(env?.DB);
-  dbVideos.forEach((v: any) => {
-    if (v.slug) localMap.set(v.slug, v);
-  });
+  const [dbVideos, dbPrograms] = await Promise.all([
+    getDbVideos(env?.DB),
+    getDbPrograms(env?.DB)
+  ]);
 
-  if (githubToken) {
+  let allPrograms: any[] = [];
+  const localMap = new Map();
+
+  if (env?.DB) {
+    allPrograms = dbPrograms || [];
+    (dbVideos || []).forEach((v: any) => {
+      if (v.slug) localMap.set(v.slug, v);
+    });
+  } else {
+    const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+    allPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+      slug: path.split("/").pop()?.replace(".json", ""),
+      ...content,
+    }));
+
+    const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
+    Object.entries(jsonVideos).forEach(([path, content]: any) => {
+      const s = path.split('/').pop()?.replace('.json', '');
+      localMap.set(s, { slug: s, ...content });
+    });
+  }
+
+  // Fetch live YouTube playlist videos if any programs have playlist configured
+  if (allPrograms.length > 0) {
+    try {
+      const { fetchLiveYouTubeVideos } = await import("~/utils/youtube");
+      const liveVideos = await fetchLiveYouTubeVideos(allPrograms);
+      liveVideos.forEach((v: any) => {
+        if (v.slug) localMap.set(v.slug, v);
+      });
+    } catch (e) {
+      console.warn("Failed to fetch live YouTube playlist videos in en video detail:", e);
+    }
+  }
+
+  if (githubToken && !env?.DB) {
     try {
       const fetchFolder = async (folder: string) => {
         const res = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/contents/app/content/${folder}?ref=main`, {
@@ -120,14 +147,16 @@ export const loader = async ({ params, context, request }: any) => {
     }
   }
 
-  allVideos = Array.from(localMap.values());
-
-  if (allVideos.length === 0) {
-    const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-    allVideos = Object.entries(jsonVideos).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content };
-    });
+  // If specific video slug still not found in map and we have programs with playlists, attempt single video fetch
+  if (!localMap.has(slug) && allPrograms.length > 0) {
+    const { fetchSingleYouTubeVideo } = await import("~/utils/youtube");
+    const singleVideo = await fetchSingleYouTubeVideo(slug, allPrograms);
+    if (singleVideo) {
+      localMap.set(singleVideo.slug, singleVideo);
+    }
   }
+
+  allVideos = Array.from(localMap.values());
 
   // Format videos
   allVideos = allVideos.map((v: any, index: number) => {

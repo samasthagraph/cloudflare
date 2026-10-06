@@ -464,33 +464,11 @@ export const loader = async ({ request, context }: any) => {
         getDbSetting(env.DB, "footer")
       ]);
 
-      if (dbArticles && dbArticles.length > 0) {
-        const map = new Map<string, any>();
-        articles.forEach((a: any) => map.set(a.slug, a));
-        dbArticles.forEach((a: any) => map.set(a.slug, a));
-        articles = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      }
-      if (dbVideos && dbVideos.length > 0) {
-        const map = new Map<string, any>();
-        videos.forEach((v: any) => map.set(v.slug, v));
-        dbVideos.forEach((v: any) => map.set(v.slug, v));
-        videos = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      }
-      if (dbPodcasts && dbPodcasts.length > 0) {
-        const map = new Map<string, any>();
-        podcasts.forEach((p: any) => map.set(p.slug, p));
-        dbPodcasts.forEach((p: any) => map.set(p.slug, p));
-        podcasts = Array.from(map.values()).sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-      }
-      if (dbPrograms && dbPrograms.length > 0) {
-        const map = new Map<string, any>();
-        programs.forEach((p: any) => map.set(p.slug, { ...p, status: p.status || 'published' }));
-        dbPrograms.forEach((p: any) => {
-          const existing = map.get(p.slug) || {};
-          map.set(p.slug, { ...existing, ...p, status: p.status || existing.status || 'published' });
-        });
-        programs = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      }
+      articles = (dbArticles || []).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+      videos = (dbVideos || []).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+      podcasts = (dbPodcasts || []).sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
+      programs = (dbPrograms || []).map((p: any) => ({ ...p, status: p.status || 'published' })).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+
       if (dbHomepage) homepageSettings = dbHomepage;
       if (dbAbout) aboutSettings = dbAbout;
       if (dbContact) contactSettings = dbContact;
@@ -503,22 +481,24 @@ export const loader = async ({ request, context }: any) => {
       if (dbHeader) headerSettings = dbHeader;
       if (dbFooter) footerSettings = dbFooter;
     } catch (e) {
-      console.warn("D1 loader merge warning:", e);
+      console.warn("D1 loader warning in admin:", e);
     }
   }
 
-  try {
-    const liveYtVideos = await fetchLiveYouTubeVideos(programs);
-    if (liveYtVideos.length > 0) {
-      const map = new Map<string, any>();
-      videos.forEach((v: any) => map.set(v.slug, v));
-      liveYtVideos.forEach((v: any) => {
-        if (!map.has(v.slug)) map.set(v.slug, v);
-      });
-      videos = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  if (programs.length > 0) {
+    try {
+      const liveYtVideos = await fetchLiveYouTubeVideos(programs);
+      if (liveYtVideos.length > 0) {
+        const map = new Map<string, any>();
+        videos.forEach((v: any) => map.set(v.slug, v));
+        liveYtVideos.forEach((v: any) => {
+          if (!map.has(v.slug)) map.set(v.slug, v);
+        });
+        videos = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+      }
+    } catch (e) {
+      console.warn("Live YouTube sync warning in admin loader:", e);
     }
-  } catch (e) {
-    console.warn("Live YouTube sync warning in admin loader:", e);
   }
 
   return json({
