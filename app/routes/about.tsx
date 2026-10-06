@@ -24,14 +24,28 @@ export const meta: MetaFunction = ({ location }) => {
   ];
 };
 
-export const loader = async () => {
+export const loader = async ({ context }: any) => {
+  const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
   let aboutData = null;
-  try {
-    const aboutFiles = import.meta.glob("../content/settings/about.json", { import: 'default', eager: true });
-    aboutData = Object.values(aboutFiles)[0] || null;
-  } catch (e) {}
 
-  const data = aboutData || {
+  if (env?.DB) {
+    try {
+      const { getDbSetting } = await import("~/utils/db.server");
+      const dbAbout = await getDbSetting(env.DB, "about");
+      if (dbAbout) aboutData = dbAbout;
+    } catch (e) {
+      console.warn("D1 about loader fetch warning:", e);
+    }
+  }
+
+  if (!aboutData) {
+    try {
+      const aboutFiles = import.meta.glob("../content/settings/about.json", { import: 'default', eager: true });
+      aboutData = Object.values(aboutFiles)[0] || null;
+    } catch (e) {}
+  }
+
+  const defaultData = {
     hero: {
       eyebrow: "About Samastha Graph",
       statement: "The collective voice of Samastha",
@@ -56,12 +70,9 @@ export const loader = async () => {
     }
   };
 
-  const localAbout = import.meta.glob("../content/settings/about.json", { import: 'default', eager: true });
-  for (const path in localAbout) {
-    aboutData = localAbout[path] as any;
-  }
-
-  return json({ data: aboutData });
+  return json({ data: aboutData || defaultData }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export default function About() {

@@ -29,7 +29,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     .filter((a: any) => a.status !== 'draft' && isEnglish(a))
     .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  return json({ articles: articlesData });
+  return json({ articles: articlesData }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export default ArticlesIndex;

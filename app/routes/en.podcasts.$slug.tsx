@@ -207,7 +207,7 @@ export const loader = async ({ params, context, request }: any) => {
     },
     {
       headers: {
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=0, must-revalidate",
       },
     }
   );

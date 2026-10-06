@@ -56,7 +56,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
 
   const videos = Array.from(videoMap.values()).filter((v: any) => v.status === "published");
 
-  return json({ programs, videos });
+  return json({ programs, videos }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export default function ProgramsIndex() {

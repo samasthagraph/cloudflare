@@ -52,17 +52,37 @@ export const meta: MetaFunction = ({ location }) => {
   ];
 };
 
-export const loader = async () => {
+export const loader = async ({ context }: any) => {
+  const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
   let contactData = null;
   let aboutData = null;
   
-  try {
-    const contactFiles = import.meta.glob("../content/settings/contact.json", { import: 'default', eager: true });
-    contactData = Object.values(contactFiles)[0] || null;
-    
-    const aboutFiles = import.meta.glob("../content/settings/about.json", { import: 'default', eager: true });
-    aboutData = Object.values(aboutFiles)[0] || null;
-  } catch (e) {}
+  if (env?.DB) {
+    try {
+      const { getDbSetting } = await import("~/utils/db.server");
+      const [dbContact, dbAbout] = await Promise.all([
+        getDbSetting(env.DB, "contact"),
+        getDbSetting(env.DB, "about")
+      ]);
+      if (dbContact) contactData = dbContact;
+      if (dbAbout) aboutData = dbAbout;
+    } catch (e) {
+      console.warn("D1 contact loader fetch warning:", e);
+    }
+  }
+
+  if (!contactData) {
+    try {
+      const contactFiles = import.meta.glob("../content/settings/contact.json", { import: 'default', eager: true });
+      contactData = Object.values(contactFiles)[0] || null;
+    } catch (e) {}
+  }
+  if (!aboutData) {
+    try {
+      const aboutFiles = import.meta.glob("../content/settings/about.json", { import: 'default', eager: true });
+      aboutData = Object.values(aboutFiles)[0] || null;
+    } catch (e) {}
+  }
 
   const data = contactData || {
     hero: {
@@ -90,7 +110,9 @@ export const loader = async () => {
     }
   };
 
-  return json({ data });
+  return json({ data }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export default function Contact() {

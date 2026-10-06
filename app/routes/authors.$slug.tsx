@@ -101,12 +101,19 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
     })
     .sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
 
-  return json({
-    author,
-    articles: allArticles,
-    videos: allVideos,
-    podcasts: allPodcasts
-  });
+  return json(
+    {
+      author,
+      articles: allArticles,
+      videos: allVideos,
+      podcasts: allPodcasts,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=0, must-revalidate",
+      },
+    }
+  );
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {

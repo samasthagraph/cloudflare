@@ -78,7 +78,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     .filter((p: any) => p.status !== 'draft' && isMalayalam(p))
     .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  return json({ podcasts: podcastsData, shows });
+  return json({ podcasts: podcastsData, shows }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 

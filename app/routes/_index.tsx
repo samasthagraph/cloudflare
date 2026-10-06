@@ -133,6 +133,8 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     hero: resolvedHero,
     homepageSettings,
     podcastPlatforms
+  }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
   });
 };
 

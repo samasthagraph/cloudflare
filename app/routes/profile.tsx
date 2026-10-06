@@ -40,53 +40,54 @@ export const loader = async ({ context }: any) => {
 
   try {
     const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
-    const githubToken = env.GITHUB_TOKEN;
-    const githubOwner = env.GITHUB_OWNER || "samasthagraph";
-    const githubRepo = env.GITHUB_REPO || "cloudflare";
 
-    const localProfile = import.meta.glob("../content/settings/profile.json", { import: 'default', eager: true });
-    for (const path in localProfile) {
-      profile = localProfile[path] as any;
+    // 1. D1 Database First
+    if (env?.DB) {
+      try {
+        const { getDbSetting, getDbVideos, getDbPodcasts, getDbArticles } = await import("~/utils/db.server");
+        const [dbProfile, dbVideos, dbPodcasts, dbArticles] = await Promise.all([
+          getDbSetting(env.DB, "profile"),
+          getDbVideos(env.DB),
+          getDbPodcasts(env.DB),
+          getDbArticles(env.DB)
+        ]);
+
+        if (dbProfile) profile = dbProfile;
+        if (dbVideos && dbVideos.length > 0) latestVideo = dbVideos[0];
+        if (dbPodcasts && dbPodcasts.length > 0) latestPodcast = dbPodcasts[0];
+        if (dbArticles && dbArticles.length > 0) latestArticle = dbArticles[0];
+      } catch (dbErr) {
+        console.warn("D1 profile fetch warning:", dbErr);
+      }
     }
 
-    if (profile.featuredContent?.showLatestVideo) {
+    // 2. Static JSON fallback
+    if (!profile.links || profile.links.length === 0) {
+      const localProfile = import.meta.glob("../content/settings/profile.json", { import: 'default', eager: true });
+      for (const path in localProfile) {
+        const pData = localProfile[path] as any;
+        if (pData) profile = pData;
+      }
+    }
+
+    if (!latestVideo && profile.featuredContent?.showLatestVideo) {
       const videos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
       const videoList = Object.entries(videos).map(([path, content]: any) => ({ slug: path.split('/').pop()?.replace('.json', ''), ...content })).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
       latestVideo = videoList[0] || null;
     }
 
-    if (profile.featuredContent?.showLatestPodcast) {
+    if (!latestPodcast && profile.featuredContent?.showLatestPodcast) {
       const podcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
       const podcastList = Object.entries(podcasts).map(([path, content]: any) => ({ slug: path.split('/').pop()?.replace('.json', ''), ...content })).sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
       latestPodcast = podcastList[0] || null;
-    }
-
-    if (githubToken) {
-      const fetchFileContent = async (path: string) => {
-        const res = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/contents/${path}?ref=main`, {
-          headers: { "Authorization": `token ${githubToken}`, "User-Agent": "Samastha-CMS", "Accept": "application/vnd.github.v3+json" }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const base64 = data.content.replace(/\n/g, '');
-          const binaryString = atob(base64);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-          return new TextDecoder('utf-8').decode(bytes);
-        }
-        return null;
-      };
-
-      const liveProfileStr = await fetchFileContent("app/content/settings/profile.json");
-      if (liveProfileStr) {
-        profile = JSON.parse(liveProfileStr);
-      }
     }
   } catch (e) {
     console.error("Error loading profile data", e);
   }
 
-  return json({ profile, latestVideo, latestPodcast, latestArticle });
+  return json({ profile, latestVideo, latestPodcast, latestArticle }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 const getIcon = (name: string, fallback: any = LinkIcon) => {

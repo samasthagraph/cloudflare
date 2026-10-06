@@ -39,7 +39,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
 
   const articles = articlesData.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
-  return json({ articles });
+  return json({ articles }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 

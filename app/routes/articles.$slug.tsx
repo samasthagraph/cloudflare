@@ -86,6 +86,8 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
     slug,
     counterpartSlug,
     authorDetails
+  }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
   });
 };
 

@@ -53,7 +53,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     };
   });
 
-  return json({ authors: authorsWithCounts });
+  return json({ authors: authorsWithCounts }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export const meta: MetaFunction = () => {

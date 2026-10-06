@@ -116,7 +116,14 @@ export const loader = async ({ params, context }: any) => {
     if (enCounterpart) enCounterpartSlug = enCounterpart.slug;
   }
 
-  return json({ program, episodes: episodeVideos, enCounterpartSlug });
+  return json(
+    { program, episodes: episodeVideos, enCounterpartSlug },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=0, must-revalidate",
+      },
+    }
+  );
 };
 
 export default function ProgramDetail() {

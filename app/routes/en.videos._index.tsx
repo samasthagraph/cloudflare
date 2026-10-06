@@ -76,7 +76,9 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     }
   }
 
-  return json({ videos: videosData, programs, programCounts, spotlight });
+  return json({ videos: videosData, programs, programCounts, spotlight }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export default VideosIndex;

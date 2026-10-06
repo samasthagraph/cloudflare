@@ -37,9 +37,11 @@ const themeMap: Record<string, { title: string; body: string; align: string }> =
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const ctx = context as any;
   const env = ctx?.cloudflare?.env || ctx?.env || (typeof process !== 'undefined' ? process.env : {});
-  const [dbVideos, dbPrograms] = await Promise.all([
+  const { getDbSetting } = await import("~/utils/db.server");
+  const [dbVideos, dbPrograms, dbSpotlight] = await Promise.all([
     getDbVideos(env?.DB),
-    getDbPrograms(env?.DB)
+    getDbPrograms(env?.DB),
+    getDbSetting(env?.DB, "spotlight")
   ]);
 
   // Load programs (ML only, published only)
@@ -95,14 +97,18 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
   });
 
   // Load spotlight settings
-  const spotlightGlob = import.meta.glob("../content/settings/spotlight.json", { import: 'default', eager: true });
-  let spotlight: any = null;
-  for (const content of Object.values(spotlightGlob)) {
-    spotlight = content as any;
-    break;
+  let spotlight: any = dbSpotlight;
+  if (!spotlight) {
+    const spotlightGlob = import.meta.glob("../content/settings/spotlight.json", { import: 'default', eager: true });
+    for (const content of Object.values(spotlightGlob)) {
+      spotlight = content as any;
+      break;
+    }
   }
 
-  return json({ videos: videosData, programs, programCounts, spotlight });
+  return json({ videos: videosData, programs, programCounts, spotlight }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export default function Videos() {

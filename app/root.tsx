@@ -71,7 +71,9 @@ export const loader = async ({ context }: any) => {
     }
   }
 
-  return json({ socialPlatforms, podcastPlatforms, headerSettings, footerSettings });
+  return json({ socialPlatforms, podcastPlatforms, headerSettings, footerSettings }, {
+    headers: { "Cache-Control": "public, max-age=0, must-revalidate" }
+  });
 };
 
 export const links: LinksFunction = () => [

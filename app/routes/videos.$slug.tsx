@@ -230,7 +230,7 @@ export const loader = async ({ params, context, request }: any) => {
     { video: activeVideo, relatedVideos: finalRelated, upNext, url: request.url, counterpartSlug, videoProgram },
     {
       headers: {
-        "Cache-Control": "public, max-age=60",
+        "Cache-Control": "public, max-age=0, must-revalidate",
       },
     }
   );
