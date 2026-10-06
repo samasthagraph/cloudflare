@@ -477,8 +477,11 @@ export const loader = async ({ request, context }: any) => {
       }
       if (dbPrograms && dbPrograms.length > 0) {
         const map = new Map<string, any>();
-        programs.forEach((p: any) => map.set(p.slug, p));
-        dbPrograms.forEach((p: any) => map.set(p.slug, p));
+        programs.forEach((p: any) => map.set(p.slug, { ...p, status: p.status || 'published' }));
+        dbPrograms.forEach((p: any) => {
+          const existing = map.get(p.slug) || {};
+          map.set(p.slug, { ...existing, ...p, status: p.status || existing.status || 'published' });
+        });
         programs = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
       }
       if (dbHomepage) homepageSettings = dbHomepage;
@@ -2083,7 +2086,7 @@ ${item.body}`;
                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{program.language === 'en' ? 'EN' : 'ML'}</span>
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell text-gray-600">{program.category || 'General'}</td>
-                          <td className="px-4 py-3"><StatusBadge status={program.status || 'draft'} /></td>
+                          <td className="px-4 py-3"><StatusBadge status={program.status || 'published'} /></td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-2">
                               <button onClick={() => openProgramEditor(program)} className="p-1.5 text-gray-500 hover:text-[#15664a] hover:bg-green-50 rounded-sm transition-colors" title="Edit">

@@ -64,6 +64,12 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
         cover_image TEXT,
         host TEXT,
         category TEXT,
+        youtube_playlist_id TEXT,
+        youtube_thumbnail TEXT,
+        status TEXT DEFAULT 'published',
+        language TEXT DEFAULT 'ml',
+        translation_group_id TEXT,
+        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -87,6 +93,21 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Safe incremental column migrations for programs
+    const programColumns = [
+      "ALTER TABLE programs ADD COLUMN youtube_playlist_id TEXT",
+      "ALTER TABLE programs ADD COLUMN youtube_thumbnail TEXT",
+      "ALTER TABLE programs ADD COLUMN status TEXT DEFAULT 'published'",
+      "ALTER TABLE programs ADD COLUMN language TEXT DEFAULT 'ml'",
+      "ALTER TABLE programs ADD COLUMN translation_group_id TEXT",
+      "ALTER TABLE programs ADD COLUMN published_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+    ];
+    for (const colSql of programColumns) {
+      try {
+        await db.prepare(colSql).run();
+      } catch (e) {}
+    }
   } catch (e) {
     console.warn("Table verification / creation warning:", e);
   }
@@ -423,7 +444,7 @@ export async function getDbPrograms(db?: D1Database): Promise<any[]> {
   if (!db) return [];
   try {
     await ensureTablesExist(db);
-    const { results } = await db.prepare("SELECT * FROM programs ORDER BY created_at DESC").all();
+    const { results } = await db.prepare("SELECT * FROM programs ORDER BY published_at DESC, created_at DESC").all();
     return (results || []).map((row: any) => ({
       slug: row.slug,
       title: row.title,
@@ -431,6 +452,12 @@ export async function getDbPrograms(db?: D1Database): Promise<any[]> {
       coverImage: row.cover_image,
       host: row.host,
       category: row.category,
+      youtubePlaylistId: row.youtube_playlist_id,
+      youtubeThumbnail: row.youtube_thumbnail,
+      status: row.status || 'published',
+      language: row.language || 'ml',
+      translationGroupId: row.translation_group_id,
+      publishedAt: row.published_at || (row.created_at ? row.created_at.split('T')[0] : ''),
       type: "program"
     }));
   } catch (err) {
@@ -443,14 +470,24 @@ export async function saveDbProgram(db: D1Database, program: any): Promise<boole
   try {
     await ensureTablesExist(db);
     await db.prepare(`
-      INSERT INTO programs (slug, title, description, cover_image, host, category, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO programs (
+        slug, title, description, cover_image, host, category,
+        youtube_playlist_id, youtube_thumbnail, status, language,
+        translation_group_id, published_at, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(slug) DO UPDATE SET
         title = excluded.title,
         description = excluded.description,
         cover_image = excluded.cover_image,
         host = excluded.host,
         category = excluded.category,
+        youtube_playlist_id = excluded.youtube_playlist_id,
+        youtube_thumbnail = excluded.youtube_thumbnail,
+        status = excluded.status,
+        language = excluded.language,
+        translation_group_id = excluded.translation_group_id,
+        published_at = excluded.published_at,
         updated_at = CURRENT_TIMESTAMP
     `).bind(
       program.slug,
@@ -458,7 +495,13 @@ export async function saveDbProgram(db: D1Database, program: any): Promise<boole
       program.description || "",
       program.coverImage || "",
       program.host || "",
-      program.category || "General"
+      program.category || "General",
+      program.youtubePlaylistId || "",
+      program.youtubeThumbnail || "",
+      program.status || "published",
+      program.language || "ml",
+      program.translationGroupId || "",
+      program.publishedAt || new Date().toISOString().split('T')[0]
     ).run();
     return true;
   } catch (err) {

@@ -3,14 +3,27 @@
   "brandTagline": "The collective voice of Samastha Kerala Jam'iyyathul Ulama in the digital media realm.",
   "copyrightText": "Samastha Graph. All rights reserved.",
   "contentLinks": [
-    { "label": "Latest Videos", "url": "/videos" },
-    { "label": "Audio Podcasts", "url": "/podcasts" },
-    { "label": "Articles & News", "url": "/articles" }
+    {
+      "label": "Latest Videos",
+      "url": "/videos"
+    },
+    {
+      "label": "Audio Podcasts",
+      "url": "/podcasts"
+    },
+    {
+      "label": "Articles & News",
+      "url": "/articles"
+    }
   ],
   "organizationLinks": [
-    { "label": "About Us", "url": "/about" },
-    { "label": "Contact Us", "url": "/contact" },
-    { "label": "Authors & Scholars", "url": "/authors" },
-    { "label": "Link Hub", "url": "/profile" }
+    {
+      "label": "About Us",
+      "url": "/about"
+    },
+    {
+      "label": "Contact Us",
+      "url": "/contact"
+    }
   ]
 }
