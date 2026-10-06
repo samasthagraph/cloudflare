@@ -573,8 +573,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "homepage", parsedData);
+        try {
+          await saveDbSetting(env.DB, "homepage", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting homepage error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/homepage.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -600,8 +605,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "about", parsedData);
+        try {
+          await saveDbSetting(env.DB, "about", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting about error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/about.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -622,8 +632,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "contact", parsedData);
+        try {
+          await saveDbSetting(env.DB, "contact", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting contact error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/contact.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -642,8 +657,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "social-platforms", parsedData);
+        try {
+          await saveDbSetting(env.DB, "social-platforms", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting social-platforms error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/social-platforms.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -662,8 +682,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "podcast-platforms", parsedData);
+        try {
+          await saveDbSetting(env.DB, "podcast-platforms", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting podcast-platforms error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/podcast-platforms.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -688,6 +713,7 @@ export const action = async ({ request, context }: any) => {
           console.error("D1 saveDbAuthors error:", dbErr);
         }
       }
+      await writeLocalFile("app/content/settings/authors.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -707,8 +733,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "header", parsedData);
+        try {
+          await saveDbSetting(env.DB, "header", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting header error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/header.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -728,8 +759,13 @@ export const action = async ({ request, context }: any) => {
       const jsonContent = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "footer", parsedData);
+        try {
+          await saveDbSetting(env.DB, "footer", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting footer error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/footer.json", jsonContent);
 
       await commitToGitHub({
         token: githubToken,
@@ -987,11 +1023,17 @@ ${body}`;
 
     if (intent === "savePlatformSettings") {
       const platformsJsonStr = formData.get("platforms") as string;
-      const contentStr = JSON.stringify({ platforms: JSON.parse(platformsJsonStr) }, null, 2);
+      const parsedData = { platforms: JSON.parse(platformsJsonStr) };
+      const contentStr = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "podcast-platforms", { platforms: JSON.parse(platformsJsonStr) });
+        try {
+          await saveDbSetting(env.DB, "podcast-platforms", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting podcast-platforms error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/podcasts.json", contentStr);
 
       if (githubToken) {
         await commitToGitHub({
@@ -1012,8 +1054,13 @@ ${body}`;
       const contentStr = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "podcast-shows", parsedData);
+        try {
+          await saveDbSetting(env.DB, "podcast-shows", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting podcast-shows error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/podcast-shows.json", contentStr);
 
       if (githubToken) {
         await commitToGitHub({
@@ -1036,8 +1083,13 @@ ${body}`;
       const contentStr = JSON.stringify(parsedData, null, 2);
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "profile", parsedData);
+        try {
+          await saveDbSetting(env.DB, "profile", parsedData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting profile error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/profile.json", contentStr);
 
       await commitToGitHub({
         token: githubToken,
@@ -1207,8 +1259,13 @@ ${body}`;
       }
 
       if (env?.DB) {
-        await saveDbSetting(env.DB, "spotlight", spotlightData);
+        try {
+          await saveDbSetting(env.DB, "spotlight", spotlightData);
+        } catch (dbErr) {
+          console.error("D1 saveDbSetting spotlight error:", dbErr);
+        }
       }
+      await writeLocalFile("app/content/settings/spotlight.json", JSON.stringify(spotlightData, null, 2));
 
       await commitToGitHub({
         token: githubToken, owner, repo,

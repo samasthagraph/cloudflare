@@ -1,116 +1,130 @@
 /// <reference types="@cloudflare/workers-types" />
 
-// Auto-initialize tables in D1 if not yet created
+let tablesEnsured = false;
+let ensurePromise: Promise<void> | null = null;
+
+// Auto-initialize tables in D1 if not yet created (singleton guarded against concurrent calls)
 export async function ensureTablesExist(db: D1Database): Promise<void> {
-  try {
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS articles (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL,
-        advanced_title TEXT,
-        excerpt TEXT,
-        cover_image TEXT,
-        thumb_image TEXT,
-        category TEXT,
-        author TEXT,
-        seo_title TEXT,
-        seo_description TEXT,
-        theme_preset TEXT DEFAULT 'theme-malayalam-standard',
-        status TEXT DEFAULT 'published',
-        reading_time INTEGER DEFAULT 5,
-        translation_group_id TEXT,
-        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        body TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+  if (tablesEnsured) return;
+  if (ensurePromise) return ensurePromise;
 
-      CREATE TABLE IF NOT EXISTS videos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL,
-        youtube_id TEXT,
-        description TEXT,
-        category TEXT,
-        thumbnail_url TEXT,
-        duration TEXT,
-        program_name TEXT,
-        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+  ensurePromise = (async () => {
+    try {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS articles (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          advanced_title TEXT,
+          excerpt TEXT,
+          cover_image TEXT,
+          thumb_image TEXT,
+          category TEXT,
+          author TEXT,
+          seo_title TEXT,
+          seo_description TEXT,
+          theme_preset TEXT DEFAULT 'theme-malayalam-standard',
+          status TEXT DEFAULT 'published',
+          reading_time INTEGER DEFAULT 5,
+          translation_group_id TEXT,
+          published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          body TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
 
-      CREATE TABLE IF NOT EXISTS podcasts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        audio_url TEXT,
-        duration TEXT,
-        cover_image TEXT,
-        show_name TEXT,
-        episode_number INTEGER,
-        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+        CREATE TABLE IF NOT EXISTS videos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          youtube_id TEXT,
+          description TEXT,
+          category TEXT,
+          thumbnail_url TEXT,
+          duration TEXT,
+          program_name TEXT,
+          published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
 
-      CREATE TABLE IF NOT EXISTS programs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        cover_image TEXT,
-        host TEXT,
-        category TEXT,
-        youtube_playlist_id TEXT,
-        youtube_thumbnail TEXT,
-        status TEXT DEFAULT 'published',
-        language TEXT DEFAULT 'ml',
-        translation_group_id TEXT,
-        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+        CREATE TABLE IF NOT EXISTS podcasts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          audio_url TEXT,
+          duration TEXT,
+          cover_image TEXT,
+          show_name TEXT,
+          episode_number INTEGER,
+          published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
 
-      CREATE TABLE IF NOT EXISTS site_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+        CREATE TABLE IF NOT EXISTS programs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          cover_image TEXT,
+          host TEXT,
+          category TEXT,
+          youtube_playlist_id TEXT,
+          youtube_thumbnail TEXT,
+          status TEXT DEFAULT 'published',
+          language TEXT DEFAULT 'ml',
+          translation_group_id TEXT,
+          published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
 
-      CREATE TABLE IF NOT EXISTS authors (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        name_ml TEXT,
-        role TEXT,
-        avatar TEXT,
-        bio TEXT,
-        twitter TEXT,
-        website TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+        CREATE TABLE IF NOT EXISTS site_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
 
-    // Safe incremental column migrations for programs
-    const programColumns = [
-      "ALTER TABLE programs ADD COLUMN youtube_playlist_id TEXT",
-      "ALTER TABLE programs ADD COLUMN youtube_thumbnail TEXT",
-      "ALTER TABLE programs ADD COLUMN status TEXT DEFAULT 'published'",
-      "ALTER TABLE programs ADD COLUMN language TEXT DEFAULT 'ml'",
-      "ALTER TABLE programs ADD COLUMN translation_group_id TEXT",
-      "ALTER TABLE programs ADD COLUMN published_at DATETIME DEFAULT CURRENT_TIMESTAMP"
-    ];
-    for (const colSql of programColumns) {
-      try {
-        await db.prepare(colSql).run();
-      } catch (e) {}
+        CREATE TABLE IF NOT EXISTS authors (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          name_ml TEXT,
+          role TEXT,
+          avatar TEXT,
+          bio TEXT,
+          twitter TEXT,
+          website TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Safe incremental column migrations for programs
+      const programColumns = [
+        "ALTER TABLE programs ADD COLUMN youtube_playlist_id TEXT",
+        "ALTER TABLE programs ADD COLUMN youtube_thumbnail TEXT",
+        "ALTER TABLE programs ADD COLUMN status TEXT DEFAULT 'published'",
+        "ALTER TABLE programs ADD COLUMN language TEXT DEFAULT 'ml'",
+        "ALTER TABLE programs ADD COLUMN translation_group_id TEXT",
+        "ALTER TABLE programs ADD COLUMN published_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+      ];
+      for (const colSql of programColumns) {
+        try {
+          await db.prepare(colSql).run();
+        } catch (e) {}
+      }
+
+      tablesEnsured = true;
+    } catch (e) {
+      console.warn("Table verification / creation warning:", e);
+    } finally {
+      ensurePromise = null;
     }
-  } catch (e) {
-    console.warn("Table verification / creation warning:", e);
-  }
+  })();
+
+  return ensurePromise;
 }
 
 // ---------------- ARTICLES ---------------- //

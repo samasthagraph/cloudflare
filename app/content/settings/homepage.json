@@ -2,7 +2,7 @@
   "hero": {
     "enabled": true,
     "badgeText": "",
-    "title": "THE ILLUMINATED <span class=\"text-brand-gold\">COSMOS </span>OF KNOWLEDGE",
+    "title": "The Illuminated <span class=\"text-brand-gold\">Cosmos </span>Of Knowledge",
     "subtitle": "Samastha Graph",
     "description": "Dive into premium Islamic content, thought-provoking podcasts, and enlightening documentaries designed to inspire your spiritual journey.",
     "primaryButtonText": "Watch Now",
@@ -10,7 +10,7 @@
     "secondaryButtonText": "Listen to Podcasts",
     "secondaryButtonLink": "#podcasts",
     "type": "video",
-    "slug": "launching--samastha-graph--kanthapuram-ap-aboobacker-musliyar",
+    "slug": "youtube-zwUidpWhYgM",
     "layout": "cinematic",
     "eyebrow": "FEATURED VIDEO",
     "displayTitle": "",
