@@ -220,15 +220,15 @@ export default function AuthorProfilePage() {
       </section>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 relative z-20">
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-2 flex flex-wrap gap-2 mb-10">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#c1d5cd] p-2 flex flex-wrap gap-2 mb-10">
           <button
             onClick={() => setActiveTab('all')}
-            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === 'all'
                 ? 'bg-[#15664a] text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100'
+                : 'text-gray-600 hover:text-[#15664a] hover:bg-[#eef3f1]'
             }`}
           >
             All Works ({totalItems})
@@ -236,10 +236,10 @@ export default function AuthorProfilePage() {
           {articles?.length > 0 && (
             <button
               onClick={() => setActiveTab('articles')}
-              className={`flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                 activeTab === 'articles'
                   ? 'bg-[#15664a] text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-[#15664a] hover:bg-[#eef3f1]'
               }`}
             >
               <FileText size={16} /> Articles ({articles.length})
@@ -248,10 +248,10 @@ export default function AuthorProfilePage() {
           {videos?.length > 0 && (
             <button
               onClick={() => setActiveTab('videos')}
-              className={`flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                 activeTab === 'videos'
                   ? 'bg-[#15664a] text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-[#15664a] hover:bg-[#eef3f1]'
               }`}
             >
               <Video size={16} /> Videos ({videos.length})
@@ -260,10 +260,10 @@ export default function AuthorProfilePage() {
           {podcasts?.length > 0 && (
             <button
               onClick={() => setActiveTab('podcasts')}
-              className={`flex-1 sm:flex-none px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                 activeTab === 'podcasts'
                   ? 'bg-[#15664a] text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-[#15664a] hover:bg-[#eef3f1]'
               }`}
             >
               <Mic size={16} /> Podcasts ({podcasts.length})
