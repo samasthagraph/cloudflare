@@ -236,23 +236,71 @@ export const loader = async ({ request, context }: any) => {
   if (!session.get("adminAuthenticated")) {
     throw redirect("/admin/login");
   }
-  let articles: any[] = [];
-  let videos: any[] = [];
-  let podcasts: any[] = [];
-  let programs: any[] = [];
-  let spotlightSettings = null;
-  let platformSettings = null;
-  let profileSettings = null;
-  let homepageSettings = null;
-  let aboutSettings = null;
-  let contactSettings = null;
-  let socialPlatformSettings = null;
-  let podcastPlatformSettings = null;
-  let podcastShowsSettings = null;
-  let authorsSettings = null;
-  let headerSettings = null;
-  let footerSettings = null;
+  let spotlightSettings: any = null;
+  let platformSettings: any = null;
+  let profileSettings: any = null;
+  let homepageSettings: any = null;
+  let aboutSettings: any = null;
+  let contactSettings: any = null;
+  let socialPlatformSettings: any = null;
+  let podcastPlatformSettings: any = null;
+  let podcastShowsSettings: any = null;
+  let authorsSettings: any = null;
+  let headerSettings: any = null;
+  let footerSettings: any = null;
 
+  // 1. Always load static repository files first
+  const mdxArticles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
+  const staticArticles = Object.entries(mdxArticles).map(([path, content]) => {
+    const fileSlug = path.split('/').pop()?.replace('.mdx', '');
+    const { attributes, body } = fm(content as string);
+    return { slug: fileSlug, ...(attributes as any), body, type: 'article' };
+  });
+
+  const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
+  const staticVideos = Object.entries(jsonVideos).map(([path, content]: any) => {
+    return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'video' };
+  });
+
+  const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
+  const staticPodcasts = Object.entries(jsonPodcasts).map(([path, content]: any) => {
+    return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'podcast' };
+  });
+
+  const jsonPrograms = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
+  const staticPrograms = Object.entries(jsonPrograms).map(([path, content]: any) => {
+    return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'program' };
+  });
+
+  const jsonSettings = import.meta.glob("../content/settings/*.json", { import: 'default', eager: true });
+  for (const path in jsonSettings) {
+    if (path.includes('podcasts.json')) platformSettings = jsonSettings[path];
+    if (path.includes('profile.json')) profileSettings = jsonSettings[path];
+    if (path.includes('homepage.json')) homepageSettings = jsonSettings[path];
+    if (path.includes('about.json')) aboutSettings = jsonSettings[path];
+    if (path.includes('contact.json')) contactSettings = jsonSettings[path];
+    if (path.includes('social-platforms.json')) socialPlatformSettings = jsonSettings[path];
+    if (path.includes('podcast-platforms.json')) podcastPlatformSettings = jsonSettings[path];
+    if (path.includes('podcast-shows.json')) podcastShowsSettings = jsonSettings[path];
+    if (path.includes('spotlight.json')) spotlightSettings = jsonSettings[path];
+    if (path.includes('authors.json')) authorsSettings = jsonSettings[path];
+    if (path.includes('header.json')) headerSettings = jsonSettings[path];
+    if (path.includes('footer.json')) footerSettings = jsonSettings[path];
+  }
+
+  const articleMap = new Map<string, any>();
+  staticArticles.forEach(a => articleMap.set(a.slug, a));
+
+  const videoMap = new Map<string, any>();
+  staticVideos.forEach(v => videoMap.set(v.slug, v));
+
+  const podcastMap = new Map<string, any>();
+  staticPodcasts.forEach(p => podcastMap.set(p.slug, p));
+
+  const programMap = new Map<string, any>();
+  staticPrograms.forEach(p => programMap.set(p.slug, p));
+
+  // 2. Fetch and merge from GitHub if GITHUB_TOKEN is present
   const githubToken = env.GITHUB_TOKEN;
   const githubOwner = env.GITHUB_OWNER || "samasthagraph";
   const githubRepo = env.GITHUB_REPO || "cloudflare";
@@ -285,7 +333,7 @@ export const loader = async ({ request, context }: any) => {
         const binaryString = atob(base64);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+          bytes[i] = binaryString.charCodeAt(i);
         }
         const decoder = new TextDecoder('utf-8');
         return decoder.decode(bytes);
@@ -301,149 +349,59 @@ export const loader = async ({ request, context }: any) => {
 
       await Promise.all([
         ...((articleFiles as any[]) || []).filter(f => f.name.endsWith('.mdx')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          const { attributes, body } = fm(content);
-          articles.push({ slug: file.name.replace('.mdx', ''), ...(attributes as any), body, type: 'article' });
+          try {
+            const content = await fetchFileContent(file.url);
+            const { attributes, body } = fm(content);
+            const slug = file.name.replace('.mdx', '');
+            articleMap.set(slug, { slug, ...(attributes as any), body, type: 'article' });
+          } catch (e) {}
         }),
         ...((videoFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          videos.push({ slug: file.name.replace('.json', ''), ...JSON.parse(content), type: 'video' });
+          try {
+            const content = await fetchFileContent(file.url);
+            const slug = file.name.replace('.json', '');
+            videoMap.set(slug, { slug, ...JSON.parse(content), type: 'video' });
+          } catch (e) {}
         }),
         ...((podcastFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          podcasts.push({ slug: file.name.replace('.json', ''), ...JSON.parse(content), type: 'podcast' });
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'podcasts.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          platformSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'profile.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          profileSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'homepage.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          homepageSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'about.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          aboutSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'contact.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          contactSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'social-platforms.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          socialPlatformSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'podcast-platforms.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          podcastPlatformSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'podcast-shows.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          podcastShowsSettings = JSON.parse(content);
+          try {
+            const content = await fetchFileContent(file.url);
+            const slug = file.name.replace('.json', '');
+            podcastMap.set(slug, { slug, ...JSON.parse(content), type: 'podcast' });
+          } catch (e) {}
         }),
         ...((programFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          programs.push({ slug: file.name.replace('.json', ''), ...JSON.parse(content), type: 'program' });
+          try {
+            const content = await fetchFileContent(file.url);
+            const slug = file.name.replace('.json', '');
+            programMap.set(slug, { slug, ...JSON.parse(content), type: 'program' });
+          } catch (e) {}
         }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'authors.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          authorsSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'spotlight.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          spotlightSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'header.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          headerSettings = JSON.parse(content);
-        }),
-        ...((settingsFiles as any[]) || []).filter(f => f.name === 'footer.json').map(async (file) => {
-          const content = await fetchFileContent(file.url);
-          footerSettings = JSON.parse(content);
+        ...((settingsFiles as any[]) || []).filter(f => f.name.endsWith('.json')).map(async (file) => {
+          try {
+            const content = await fetchFileContent(file.url);
+            const parsed = JSON.parse(content);
+            if (file.name === 'podcasts.json') platformSettings = parsed;
+            if (file.name === 'profile.json') profileSettings = parsed;
+            if (file.name === 'homepage.json') homepageSettings = parsed;
+            if (file.name === 'about.json') aboutSettings = parsed;
+            if (file.name === 'contact.json') contactSettings = parsed;
+            if (file.name === 'social-platforms.json') socialPlatformSettings = parsed;
+            if (file.name === 'podcast-platforms.json') podcastPlatformSettings = parsed;
+            if (file.name === 'podcast-shows.json') podcastShowsSettings = parsed;
+            if (file.name === 'spotlight.json') spotlightSettings = parsed;
+            if (file.name === 'authors.json') authorsSettings = parsed;
+            if (file.name === 'header.json') headerSettings = parsed;
+            if (file.name === 'footer.json') footerSettings = parsed;
+          } catch (e) {}
         })
       ]);
-
-      articles.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      videos.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      podcasts.sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-      programs.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
     } catch (e) {
-      console.error("GitHub Sync failed, falling back to local files:", e);
-      articles = [];
-      videos = [];
-      podcasts = [];
+      console.error("GitHub Sync in admin loader skipped or failed:", e);
     }
   }
 
-  if (articles.length === 0 && videos.length === 0 && podcasts.length === 0) {
-    const mdxArticles = import.meta.glob("../content/articles/*.mdx", { query: '?raw', import: 'default', eager: true });
-    articles = Object.entries(mdxArticles).map(([path, content]) => {
-      const fileSlug = path.split('/').pop()?.replace('.mdx', '');
-      const { attributes, body } = fm(content as string);
-      return { slug: fileSlug, ...(attributes as any), body, type: 'article' };
-    }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-    videos = Object.entries(jsonVideos).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'video' };
-    }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    const jsonPodcasts = import.meta.glob("../content/podcasts/*.json", { import: 'default', eager: true });
-    podcasts = Object.entries(jsonPodcasts).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'podcast' };
-    }).sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-
-    const jsonPrograms = import.meta.glob("../content/programs/*.json", { import: 'default', eager: true });
-    programs = Object.entries(jsonPrograms).map(([path, content]: any) => {
-      return { slug: path.split('/').pop()?.replace('.json', ''), ...content, type: 'program' };
-    }).sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    const jsonSettings = import.meta.glob("../content/settings/*.json", { import: 'default', eager: true });
-    for (const path in jsonSettings) {
-      if (path.includes('podcasts.json')) {
-        platformSettings = jsonSettings[path];
-      }
-      if (path.includes('profile.json')) {
-        profileSettings = jsonSettings[path];
-      }
-      if (path.includes('homepage.json')) {
-        homepageSettings = jsonSettings[path];
-      }
-      if (path.includes('about.json')) {
-        aboutSettings = jsonSettings[path];
-      }
-      if (path.includes('contact.json')) {
-        contactSettings = jsonSettings[path];
-      }
-      if (path.includes('social-platforms.json')) {
-        socialPlatformSettings = jsonSettings[path];
-      }
-      if (path.includes('podcast-platforms.json')) {
-        podcastPlatformSettings = jsonSettings[path];
-      }
-      if (path.includes('podcast-shows.json')) {
-        podcastShowsSettings = jsonSettings[path];
-      }
-      if (path.includes('spotlight.json')) {
-        spotlightSettings = jsonSettings[path];
-      }
-      if (path.includes('authors.json')) {
-        authorsSettings = jsonSettings[path];
-      }
-      if (path.includes('header.json')) {
-        headerSettings = jsonSettings[path];
-      }
-      if (path.includes('footer.json')) {
-        footerSettings = jsonSettings[path];
-      }
-    }
-  }
-
+  // 3. Merge D1 database records
   if (env?.DB) {
     try {
       const [dbArticles, dbVideos, dbPodcasts, dbPrograms, dbHomepage, dbAbout, dbContact, dbSocial, dbPodcastPlatforms, dbPodcastShows, dbProfile, dbAuthors, dbSpotlight, dbHeader, dbFooter] = await Promise.all([
@@ -464,10 +422,10 @@ export const loader = async ({ request, context }: any) => {
         getDbSetting(env.DB, "footer")
       ]);
 
-      articles = (dbArticles || []).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      videos = (dbVideos || []).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-      podcasts = (dbPodcasts || []).sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
-      programs = (dbPrograms || []).map((p: any) => ({ ...p, status: p.status || 'published' })).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+      (dbArticles || []).forEach((a: any) => articleMap.set(a.slug, { ...articleMap.get(a.slug), ...a, type: 'article' }));
+      (dbVideos || []).forEach((v: any) => videoMap.set(v.slug, { ...videoMap.get(v.slug), ...v, type: 'video' }));
+      (dbPodcasts || []).forEach((p: any) => podcastMap.set(p.slug, { ...podcastMap.get(p.slug), ...p, type: 'podcast' }));
+      (dbPrograms || []).forEach((p: any) => programMap.set(p.slug, { ...programMap.get(p.slug), ...p, status: p.status || 'published', type: 'program' }));
 
       if (dbHomepage) homepageSettings = dbHomepage;
       if (dbAbout) aboutSettings = dbAbout;
@@ -485,16 +443,19 @@ export const loader = async ({ request, context }: any) => {
     }
   }
 
+  let articles = Array.from(articleMap.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  let videos = Array.from(videoMap.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  let podcasts = Array.from(podcastMap.values()).sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
+  let programs = Array.from(programMap.values()).map((p: any) => ({ ...p, status: p.status || 'published' })).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+
   if (programs.length > 0) {
     try {
       const liveYtVideos = await fetchLiveYouTubeVideos(programs);
       if (liveYtVideos.length > 0) {
-        const map = new Map<string, any>();
-        videos.forEach((v: any) => map.set(v.slug, v));
         liveYtVideos.forEach((v: any) => {
-          if (!map.has(v.slug)) map.set(v.slug, v);
+          if (!videoMap.has(v.slug)) videoMap.set(v.slug, v);
         });
-        videos = Array.from(map.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+        videos = Array.from(videoMap.values()).sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
       }
     } catch (e) {
       console.warn("Live YouTube sync warning in admin loader:", e);
