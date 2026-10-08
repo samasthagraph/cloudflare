@@ -20,29 +20,31 @@ export const loader = async ({ context }: LoaderFunctionArgs) => {
     getDbVideos(env?.DB)
   ]);
 
-  let programs: any[] = [];
-  let videos: any[] = [];
+  // Load and merge static programs with D1 programs
+  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
 
-  if (env?.DB) {
-    programs = (dbPrograms || [])
-      .filter(isMalayalam)
-      .filter((p: any) => p.status === "published" || !p.status);
-    videos = (dbVideos || []).filter((v: any) => v.status === "published" || !v.status);
-  } else {
-    const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
-    programs = Object.entries(programsGlob).map(([path, content]: any) => ({
-      slug: path.split("/").pop()?.replace(".json", ""),
-      ...content,
-    }))
-      .filter(isMalayalam)
-      .filter((p: any) => p.status === "published" || !p.status);
+  const progMap = new Map();
+  staticPrograms.forEach((p: any) => progMap.set(p.slug, p));
+  (dbPrograms || []).forEach((p: any) => progMap.set(p.slug, p));
+  let programs: any[] = Array.from(progMap.values())
+    .filter(isMalayalam)
+    .filter((p: any) => p.status === "published" || !p.status);
 
-    const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
-    videos = Object.entries(videosGlob).map(([path, content]: any) => ({
-      slug: path.split("/").pop()?.replace(".json", ""),
-      ...content,
-    })).filter((v: any) => v.status === "published" || !v.status);
-  }
+  // Load and merge static videos with D1 videos
+  const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
+  const staticVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
+
+  const videoMap = new Map();
+  staticVideos.forEach((v: any) => videoMap.set(v.slug, v));
+  (dbVideos || []).forEach((v: any) => videoMap.set(v.slug, v));
+  let videos: any[] = Array.from(videoMap.values()).filter((v: any) => v.status === "published" || !v.status);
 
   programs.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 

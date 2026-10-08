@@ -33,25 +33,29 @@ export const loader = async ({ params, context }: any) => {
     getDbVideos(env?.DB)
   ]);
 
-  let allPrograms: any[] = [];
-  let allVideos: any[] = [];
+  // Load and merge static programs with D1 programs
+  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
 
-  if (env?.DB) {
-    allPrograms = dbPrograms || [];
-    allVideos = dbVideos || [];
-  } else {
-    const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
-    allPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
-      slug: path.split("/").pop()?.replace(".json", ""),
-      ...content,
-    }));
+  const progMap = new Map();
+  staticPrograms.forEach((p: any) => progMap.set(p.slug, p));
+  (dbPrograms || []).forEach((p: any) => progMap.set(p.slug, p));
+  const allPrograms = Array.from(progMap.values());
 
-    const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
-    allVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
-      slug: path.split("/").pop()?.replace(".json", ""),
-      ...content,
-    }));
-  }
+  // Load and merge static videos with D1 videos
+  const videosGlob = import.meta.glob("../content/videos/*.json", { import: "default", eager: true });
+  const staticVideos = Object.entries(videosGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
+
+  const videoMap = new Map();
+  staticVideos.forEach((v: any) => videoMap.set(v.slug, v));
+  (dbVideos || []).forEach((v: any) => videoMap.set(v.slug, v));
+  const allVideos = Array.from(videoMap.values());
 
   // Find the matching English published program
   const program = allPrograms.find((p: any) => 
@@ -196,8 +200,31 @@ export default function EnProgramDetail() {
                 <p className="text-white/70 text-lg max-w-2xl leading-relaxed">{program.description}</p>
               )}
               
-              <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-white/50">
-                <span className="flex items-center gap-1.5 font-medium text-white/80">
+              {/* Hero Action Buttons */}
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                {episodes.length > 0 && (
+                  <Link
+                    to={`/en/videos/${episodes[0].slug}`}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#c8a136] hover:bg-[#b08d2b] text-[#18181B] font-bold rounded-xl shadow-lg hover:shadow-xl transition-all text-sm group"
+                  >
+                    <Play size={18} fill="currentColor" className="group-hover:scale-110 transition-transform" />
+                    <span>Watch Series (Start Episode 1)</span>
+                  </Link>
+                )}
+                {playlistId && (
+                  <a
+                    href={`https://www.youtube.com/playlist?list=${playlistId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <ExternalLink size={15} /> Open YouTube Playlist
+                  </a>
+                )}
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/60 border-t border-white/10 pt-4">
+                <span className="flex items-center gap-1.5 font-medium text-white/90">
                   <Layers size={16} /> {episodes.length} {episodes.length === 1 ? "Episode" : "Episodes"}
                 </span>
                 {program.publishedAt && (
@@ -205,28 +232,18 @@ export default function EnProgramDetail() {
                     <Calendar size={14} /> {new Date(program.publishedAt).toLocaleDateString()}
                   </span>
                 )}
-                {playlistId && (
-                  <a
-                    href={`https://www.youtube.com/playlist?list=${playlistId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#c8a136]/20 hover:bg-[#c8a136]/30 border border-[#c8a136]/40 text-[#c8a136] rounded-full text-xs font-bold transition-colors"
-                  >
-                    <ExternalLink size={12} /> Open in YouTube
-                  </a>
-                )}
                 {/* Language switcher */}
                 {mlCounterpartSlug ? (
                   <Link
                     to={`/videos/programs/${mlCounterpartSlug}`}
-                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-colors font-medium"
+                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-colors font-medium text-xs"
                   >
                     View in Malayalam
                   </Link>
                 ) : (
                   <Link
                     to="/videos/programs"
-                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-colors font-medium"
+                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-colors font-medium text-xs"
                   >
                     Malayalam Programs
                   </Link>
@@ -267,10 +284,10 @@ export default function EnProgramDetail() {
                   key={episode.slug || episode.youtubeId || idx}
                   className="group bg-white rounded-2xl border border-[#E4E4E7] shadow-sm hover:shadow-xl hover:border-[#2D5A46]/40 transition-all duration-300 flex flex-col overflow-hidden"
                 >
-                  {/* Thumbnail / Play trigger */}
-                  <div
-                    className="aspect-video relative bg-black overflow-hidden cursor-pointer"
-                    onClick={() => setActiveVideoPopup(episode)}
+                  {/* Thumbnail / Link */}
+                  <Link
+                    to={`/en/videos/${episode.slug}`}
+                    className="aspect-video relative bg-black overflow-hidden block"
                   >
                     {thumbUrl ? (
                       <img
@@ -289,7 +306,7 @@ export default function EnProgramDetail() {
                         <Play size={20} className="text-white ml-0.5" fill="currentColor" />
                       </div>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Info */}
                   <div className="p-5 flex flex-col flex-grow justify-between">
@@ -306,12 +323,12 @@ export default function EnProgramDetail() {
                           </span>
                         )}
                       </div>
-                      <h3
-                        onClick={() => setActiveVideoPopup(episode)}
-                        className="font-heading font-bold text-[#18181B] text-base leading-snug line-clamp-2 cursor-pointer hover:text-[#2D5A46] transition-colors"
+                      <Link
+                        to={`/en/videos/${episode.slug}`}
+                        className="block font-heading font-bold text-[#18181B] text-base leading-snug line-clamp-2 hover:text-[#2D5A46] transition-colors"
                       >
                         {episode.title}
-                      </h3>
+                      </Link>
                     </div>
 
                     <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#E4E4E7] text-xs text-[#52525B]">
@@ -321,12 +338,21 @@ export default function EnProgramDetail() {
                           {new Date(episode.publishedAt).toLocaleDateString()}
                         </div>
                       )}
-                      <button
-                        onClick={() => setActiveVideoPopup(episode)}
-                        className="inline-flex items-center gap-1 font-bold text-[#2D5A46] hover:text-[#15664a] transition-colors"
-                      >
-                        <Play size={12} /> Watch Now
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setActiveVideoPopup(episode)}
+                          className="text-xs text-[#71717A] hover:text-[#18181B] underline transition-colors"
+                          title="Quick preview in popup"
+                        >
+                          Quick Watch
+                        </button>
+                        <Link
+                          to={`/en/videos/${episode.slug}`}
+                          className="inline-flex items-center gap-1 font-bold text-[#2D5A46] hover:text-[#15664a] transition-colors"
+                        >
+                          <Play size={12} fill="currentColor" /> Watch
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

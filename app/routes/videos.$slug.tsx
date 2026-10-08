@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useLoaderData, Link, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import { json, redirect, type MetaFunction } from "@remix-run/cloudflare";
-import { PlayCircle, Share2, Facebook, Twitter, MessageCircle, Clock, Tag, Search, MoreVertical, ThumbsUp, MessageSquare, ChevronDown, Calendar, ChevronUp, Check, Link as LinkIcon } from "lucide-react";
+import { PlayCircle, Share2, Facebook, Twitter, MessageCircle, Clock, Tag, Search, MoreVertical, ThumbsUp, MessageSquare, ChevronDown, Calendar, ChevronUp, Check, Link as LinkIcon, ChevronLeft, ChevronRight, Layers, Disc, Play } from "lucide-react";
 import { OptimizedImage } from "~/components/OptimizedImage";
 import { isMalayalam } from "~/utils/language";
-import { extractYouTubeId, getYouTubeThumbnail, fetchLiveYouTubeVideos, fetchSingleYouTubeVideo } from "~/utils/youtube";
+import { extractYouTubeId, getYouTubeThumbnail, fetchLiveYouTubeVideos, fetchSingleYouTubeVideo, fetchYouTubePlaylistVideos } from "~/utils/youtube";
 import { getDbVideos, getDbPrograms } from "~/utils/db.server";
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
@@ -64,34 +64,35 @@ export const loader = async ({ params, context, request }: any) => {
     getDbPrograms(env?.DB)
   ]);
 
-  let allPrograms: any[] = [];
+  // Load and merge static programs with D1 programs
+  const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
+  const staticPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
+    slug: path.split("/").pop()?.replace(".json", ""),
+    ...content,
+  }));
+
+  const progMap = new Map();
+  staticPrograms.forEach((p: any) => progMap.set(p.slug, p));
+  (dbPrograms || []).forEach((p: any) => progMap.set(p.slug, p));
+  const allPrograms = Array.from(progMap.values());
+
+  // Load and merge static videos with D1 videos
+  const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
   const localMap = new Map();
-
-  if (env?.DB) {
-    allPrograms = dbPrograms || [];
-    (dbVideos || []).forEach((v: any) => {
-      if (v.slug) localMap.set(v.slug, v);
-    });
-  } else {
-    const programsGlob = import.meta.glob("../content/programs/*.json", { import: "default", eager: true });
-    allPrograms = Object.entries(programsGlob).map(([path, content]: any) => ({
-      slug: path.split("/").pop()?.replace(".json", ""),
-      ...content,
-    }));
-
-    const jsonVideos = import.meta.glob("../content/videos/*.json", { import: 'default', eager: true });
-    Object.entries(jsonVideos).forEach(([path, content]: any) => {
-      const s = path.split('/').pop()?.replace('.json', '');
-      localMap.set(s, { slug: s, ...content });
-    });
-  }
+  Object.entries(jsonVideos).forEach(([path, content]: any) => {
+    const s = path.split('/').pop()?.replace('.json', '');
+    localMap.set(s, { slug: s, ...content });
+  });
+  (dbVideos || []).forEach((v: any) => {
+    if (v.slug) localMap.set(v.slug, v);
+  });
 
   // Fetch live YouTube playlist videos if any programs have playlist configured
   if (allPrograms.length > 0) {
     try {
       const liveVideos = await fetchLiveYouTubeVideos(allPrograms);
       liveVideos.forEach((v: any) => {
-        if (v.slug) localMap.set(v.slug, v);
+        if (v.slug && !localMap.has(v.slug)) localMap.set(v.slug, v);
       });
     } catch (e) {
       console.warn("Failed to fetch live YouTube playlist videos in video detail:", e);
@@ -172,6 +173,7 @@ export const loader = async ({ params, context, request }: any) => {
       playlist: v.playlist || null,
       programId: v.programId || v.program || v.programName || null,
       programName: v.programName || v.program || v.programId || null,
+      episodeNumber: typeof v.episodeNumber === 'number' ? v.episodeNumber : (v.episodeNumber ? parseInt(v.episodeNumber, 10) : undefined),
       date: v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : "Recent",
       rawDate: v.publishedAt || "1970-01-01",
       status: v.status || "published",
@@ -211,27 +213,101 @@ export const loader = async ({ params, context, request }: any) => {
     if (counterpart) counterpartSlug = counterpart.slug;
   }
 
-  // Phase 2: find the program this video belongs to, if any
+  // Phase 2: find the program and playlist episodes this video belongs to, if any
   let videoProgram: any = null;
+  let playlistEpisodes: any[] = [];
+  let currentEpisodeIndex = -1;
+  let prevEpisode: any = null;
+  let nextEpisode: any = null;
+
   if (activeVideo) {
     const rawProgramId = activeVideo.programId || 
       activeVideo.programName || 
+      activeVideo.playlist ||
       (localMap.get(activeVideo.slug) as any)?.programId || 
       (localMap.get(activeVideo.slug) as any)?.programName || 
+      (localMap.get(activeVideo.slug) as any)?.playlist ||
       null;
 
     if (rawProgramId) {
       const matched = allPrograms.find((p: any) => 
-        (p.slug === rawProgramId || p.title === rawProgramId) && 
+        (p.slug === rawProgramId || 
+         p.title?.toLowerCase() === String(rawProgramId).toLowerCase() || 
+         p.slug === String(rawProgramId).toLowerCase().replace(/ /g, '-')) && 
         isMalayalam(p) && 
         (p.status === 'published' || !p.status)
       );
       if (matched) videoProgram = matched;
     }
+
+    if (videoProgram) {
+      playlistEpisodes = malayalamVideos.filter((v: any) => 
+        (v.programId === videoProgram.slug || 
+         v.programName === videoProgram.title || 
+         v.program === videoProgram.slug || 
+         v.program === videoProgram.title ||
+         v.playlist === videoProgram.title) &&
+        (v.status === 'published' || !v.status)
+      );
+
+      // If program has YouTube playlist and playlistEpisodes is empty or sparse, dynamically add from playlist feed
+      if (videoProgram.youtubePlaylistId) {
+        try {
+          const feedVideos = await fetchYouTubePlaylistVideos(
+            videoProgram.youtubePlaylistId,
+            videoProgram.slug,
+            videoProgram.category,
+            'ml'
+          );
+          if (feedVideos.length > 0) {
+            const existingYtIds = new Set(playlistEpisodes.map((v: any) => extractYouTubeId(v.youtubeId)));
+            for (const fv of feedVideos) {
+              if (!existingYtIds.has(fv.youtubeId)) {
+                playlistEpisodes.push(fv);
+                existingYtIds.add(fv.youtubeId);
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Sort episodes ascending by episodeNumber, then date, then slug
+      playlistEpisodes.sort((a: any, b: any) => {
+        const epA = typeof a.episodeNumber === "number" ? a.episodeNumber : Infinity;
+        const epB = typeof b.episodeNumber === "number" ? b.episodeNumber : Infinity;
+        if (epA !== epB) return epA - epB;
+        const dateA = new Date(a.rawDate || a.publishedAt || "1970-01-01").getTime();
+        const dateB = new Date(b.rawDate || b.publishedAt || "1970-01-01").getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return (a.slug || "").localeCompare(b.slug || "");
+      });
+
+      currentEpisodeIndex = playlistEpisodes.findIndex((v: any) => 
+        v.slug === activeVideo.slug || 
+        v.youtubeId === activeVideo.youtubeId || 
+        (activeVideo.youtubeId && v.youtubeId && extractYouTubeId(v.youtubeId) === extractYouTubeId(activeVideo.youtubeId))
+      );
+
+      if (currentEpisodeIndex !== -1) {
+        if (currentEpisodeIndex > 0) prevEpisode = playlistEpisodes[currentEpisodeIndex - 1];
+        if (currentEpisodeIndex < playlistEpisodes.length - 1) nextEpisode = playlistEpisodes[currentEpisodeIndex + 1];
+      }
+    }
   }
 
   return json(
-    { video: activeVideo, relatedVideos: finalRelated, upNext, url: request.url, counterpartSlug, videoProgram },
+    { 
+      video: activeVideo, 
+      relatedVideos: finalRelated, 
+      upNext, 
+      url: request.url, 
+      counterpartSlug, 
+      videoProgram, 
+      playlistEpisodes,
+      currentEpisodeIndex,
+      prevEpisode,
+      nextEpisode
+    },
     {
       headers: {
         "Cache-Control": "public, max-age=0, must-revalidate",
@@ -242,7 +318,7 @@ export const loader = async ({ params, context, request }: any) => {
 
 
 export default function VideoDetail() {
-  const { video, relatedVideos, upNext, url, videoProgram } = useLoaderData<typeof loader>() as any;
+  const { video, relatedVideos, upNext, url, videoProgram, playlistEpisodes, currentEpisodeIndex, prevEpisode, nextEpisode } = useLoaderData<typeof loader>() as any;
 
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -300,8 +376,58 @@ export default function VideoDetail() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow flex flex-col lg:flex-row gap-12">
         {/* Main Content Column */}
-        <div className="w-full lg:w-2/3 flex flex-col gap-8 animate-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
+        <div className="w-full lg:w-2/3 flex flex-col gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
           
+          {/* Series Navigation Bar under the video player */}
+          {videoProgram && playlistEpisodes?.length > 0 && (
+            <div className="bg-gradient-to-r from-[#15664a] to-[#1e4e3d] text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-[#c8a136]/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                <div className="w-10 h-10 rounded-xl bg-[#c8a136]/20 border border-[#c8a136]/40 flex items-center justify-center flex-shrink-0 text-[#c8a136]">
+                  <Layers size={20} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[11px] font-bold text-[#c8a136] uppercase tracking-wider block">
+                    Series Playlist {currentEpisodeIndex !== -1 ? `• Episode ${currentEpisodeIndex + 1} of ${playlistEpisodes.length}` : `• ${playlistEpisodes.length} Episodes`}
+                  </span>
+                  <Link 
+                    to={`/videos/programs/${videoProgram.slug}`}
+                    className="font-heading text-base sm:text-lg font-bold hover:text-[#c8a136] transition-colors truncate block"
+                  >
+                    {videoProgram.title}
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+                {prevEpisode ? (
+                  <Link
+                    to={`/videos/${prevEpisode.slug}`}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 transition-all hover:scale-105"
+                  >
+                    <ChevronLeft size={16} /> Prev Episode
+                  </Link>
+                ) : (
+                  <button disabled className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/5 text-white/30 rounded-xl text-xs font-bold border border-white/5 cursor-not-allowed">
+                    <ChevronLeft size={16} /> Prev
+                  </button>
+                )}
+
+                {nextEpisode ? (
+                  <Link
+                    to={`/videos/${nextEpisode.slug}`}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#c8a136] hover:bg-[#d9b047] text-[#15664a] rounded-xl text-xs font-bold shadow-md transition-all hover:scale-105"
+                  >
+                    Next Episode <ChevronRight size={16} />
+                  </Link>
+                ) : (
+                  <button disabled className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/5 text-white/30 rounded-xl text-xs font-bold border border-white/5 cursor-not-allowed">
+                    Next <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-[#2D5A46] uppercase tracking-wider">
               <span className="px-3 py-1 bg-[#2D5A46]/10 rounded-full border border-[#2D5A46]/20">{video.category}</span>
@@ -379,9 +505,88 @@ export default function VideoDetail() {
         </div>
 
         {/* Sidebar Column */}
-        <div className="w-full lg:w-1/3 flex flex-col gap-8 animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both overflow-hidden">
+        <div className="w-full lg:w-1/3 flex flex-col gap-8 animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
           
-          {upNext && (
+          {/* Series Playlist Episode Queue */}
+          {videoProgram && playlistEpisodes?.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#c1d5cd] shadow-md overflow-hidden flex flex-col">
+              <div className="bg-gradient-to-r from-[#15664a] to-[#1e4e3d] text-white p-4 flex items-center justify-between border-b border-[#c8a136]/30">
+                <div className="min-w-0 pr-2">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-[#c8a136] uppercase tracking-wider mb-0.5">
+                    <Disc size={13} /> Series Playlist
+                  </div>
+                  <Link to={`/videos/programs/${videoProgram.slug}`} className="font-heading font-bold text-base hover:text-[#c8a136] transition-colors truncate block">
+                    {videoProgram.title}
+                  </Link>
+                </div>
+                <span className="text-xs font-bold bg-[#c8a136] text-[#15664a] px-2.5 py-1 rounded-full flex-shrink-0">
+                  {playlistEpisodes.length} eps
+                </span>
+              </div>
+
+              {/* Scrollable Episodes List */}
+              <div className="max-h-96 overflow-y-auto divide-y divide-gray-100 p-2 space-y-1">
+                {playlistEpisodes.map((ep: any, idx: number) => {
+                  const isCurrent = ep.slug === video.slug || (ep.youtubeId && video.youtubeId && extractYouTubeId(ep.youtubeId) === extractYouTubeId(video.youtubeId));
+                  const epNumber = typeof ep.episodeNumber === 'number' ? ep.episodeNumber : (idx + 1);
+                  const epThumb = ep.customThumbnail || (ep.youtubeId ? getYouTubeThumbnail(ep.youtubeId) : null);
+
+                  return (
+                    <Link
+                      key={ep.slug || ep.youtubeId || idx}
+                      to={`/videos/${ep.slug}`}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl transition-all ${
+                        isCurrent 
+                          ? 'bg-[#15664a]/10 border border-[#15664a]/30 shadow-sm' 
+                          : 'hover:bg-gray-50 text-gray-800'
+                      }`}
+                    >
+                      {/* Number / Playing indicator */}
+                      <div className="w-6 flex-shrink-0 text-center">
+                        {isCurrent ? (
+                          <div className="w-6 h-6 rounded-full bg-[#15664a] text-white flex items-center justify-center shadow-sm">
+                            <Play size={10} fill="currentColor" className="ml-0.5" />
+                          </div>
+                        ) : (
+                          <span className="text-xs font-bold text-gray-400">
+                            {epNumber}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Thumbnail */}
+                      <div className="w-20 aspect-video rounded-lg overflow-hidden bg-black flex-shrink-0 relative shadow-sm">
+                        {epThumb ? (
+                          <img src={epThumb} alt={ep.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-[#15664a]/20 flex items-center justify-center">
+                            <Play size={14} className="text-[#15664a]" />
+                          </div>
+                        )}
+                        {isCurrent && (
+                          <div className="absolute inset-0 bg-[#15664a]/40 flex items-center justify-center">
+                            <span className="text-[9px] font-bold text-white uppercase bg-black/70 px-1 py-0.5 rounded">Playing</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Title & Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`text-xs font-bold line-clamp-2 leading-tight ${isCurrent ? 'text-[#15664a]' : 'text-gray-800'}`}>
+                          {ep.title}
+                        </h4>
+                        <span className="text-[10px] text-gray-400 mt-0.5 block font-medium">
+                          Episode {epNumber}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {upNext && (!videoProgram || upNext.slug !== video.slug) && (
             <div className="flex flex-col gap-4">
               <h3 className="font-heading text-xl font-bold text-[#18181B] border-l-4 border-[#C5A059] pl-3">Up Next</h3>
               <Link 
