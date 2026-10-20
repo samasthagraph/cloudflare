@@ -274,22 +274,22 @@ export default function ArticlePage() {
       />
 
       <main className="flex-grow pb-20">
-        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
           
           {/* Back Navigation */}
-          <div className="mb-6 no-print">
+          <div className="mb-6 no-print text-left">
             <Link to="/articles" className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-400 hover:text-[#15664a] transition-colors font-poppins">
               <ArrowLeft className="w-4 h-4" /> Back to Articles
             </Link>
           </div>
 
           {/* 1. Article Title */}
-          <h1 className={`font-bold text-[#111827] tracking-tight leading-[1.25] mb-4 text-balance font-anek-malayalam ${activeTheme.title}`}>
+          <h1 className={`font-bold text-[#111827] tracking-tight leading-[1.25] mb-4 text-balance font-anek-malayalam text-left ${activeTheme.title}`}>
             {article.title}
           </h1>
 
           {/* 2. Metadata Line: Author (crimson) | DATE | 📖 X MINUTES */}
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm md:text-[15px] font-sans text-gray-600 mb-6">
+          <div className="flex flex-wrap items-center justify-start gap-x-2.5 gap-y-1.5 text-sm md:text-[15px] font-sans text-gray-600 mb-6 text-left">
             {authorName && (
               <>
                 {authorDetails?.id ? (
@@ -334,19 +334,19 @@ export default function ArticlePage() {
             </div>
           )}
 
-          {/* 4. Lead Paragraph / Standfirst (Centered & Italic) */}
+          {/* 4. Lead Paragraph / Standfirst (Left-aligned & Italic) */}
           {article.excerpt && (
-            <div className="my-6 sm:my-8 px-2 sm:px-6">
-              <p className="font-anek-malayalam italic text-center text-gray-700 text-base sm:text-lg md:text-[19px] leading-[1.85] sm:leading-[1.95] max-w-3xl mx-auto">
+            <div className="my-6 sm:my-8 text-left">
+              <p className="font-anek-malayalam italic text-left text-gray-700 text-base sm:text-lg md:text-[19px] leading-[1.85] sm:leading-[1.95]">
                 {article.excerpt}
               </p>
             </div>
           )}
 
-          {/* 5. Divider & Centered Social Share Buttons Row */}
+          {/* 5. Divider & Left-aligned Social Share Buttons Row */}
           <div className="w-full my-6 no-print">
             <div className="w-full border-t border-gray-200/80 mb-6"></div>
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+            <div className="flex flex-wrap items-center justify-start gap-1.5 sm:gap-2">
               {/* Share / Plus */}
               <button
                 type="button"
@@ -445,7 +445,7 @@ export default function ArticlePage() {
 
           {/* 6. Main Article Body */}
           <article 
-            className="article-body font-anek-malayalam text-[#1f2937] text-[17px] sm:text-[18px] md:text-[19px] leading-[2.05] sm:leading-[2.15] tracking-normal mt-8 prose prose-lg max-w-none text-left [&_p]:mb-6 [&_p]:text-[#1f2937] [&_p]:leading-[2.05] [&_h1]:text-gray-900 [&_h2]:text-gray-900 [&_h2]:font-bold [&_h2]:text-2xl [&_h2]:sm:text-3xl [&_h2]:mt-10 [&_h2]:mb-4 [&_h3]:text-gray-900 [&_h3]:font-bold [&_h3]:text-xl [&_h3]:sm:text-2xl [&_h3]:mt-8 [&_h3]:mb-3 [&_strong]:text-gray-900 [&_strong]:font-bold [&_a]:text-[#15664a] [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[#c22849] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-700 [&_blockquote]:my-6 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_li]:mb-2"
+            className="article-body font-anek-malayalam text-[#1f2937] text-[17px] sm:text-[18px] md:text-[19px] leading-[2.05] sm:leading-[2.15] tracking-normal mt-8 prose prose-lg max-w-none text-left [&_*]:text-left [&_p]:text-left [&_p]:mb-6 [&_p]:text-[#1f2937] [&_p]:leading-[2.05] [&_h1]:text-left [&_h1]:text-gray-900 [&_h2]:text-left [&_h2]:text-gray-900 [&_h2]:font-bold [&_h2]:text-2xl [&_h2]:sm:text-3xl [&_h2]:mt-10 [&_h2]:mb-4 [&_h3]:text-left [&_h3]:text-gray-900 [&_h3]:font-bold [&_h3]:text-xl [&_h3]:sm:text-2xl [&_h3]:mt-8 [&_h3]:mb-3 [&_strong]:text-gray-900 [&_strong]:font-bold [&_a]:text-[#15664a] [&_a]:underline [&_blockquote]:text-left [&_blockquote]:border-l-4 [&_blockquote]:border-[#c22849] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-700 [&_blockquote]:my-6 [&_ul]:text-left [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ol]:text-left [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_li]:mb-2"
             dangerouslySetInnerHTML={{ __html: article.htmlBody }}
           />
 
