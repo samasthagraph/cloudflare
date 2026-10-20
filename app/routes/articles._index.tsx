@@ -97,13 +97,13 @@ export default function ArticlesIndex() {
           <Link to={`/articles/${featuredArticle.slug}`} className="block group mb-16">
             <article className="relative bg-brand-dark rounded-3xl overflow-hidden shadow-2xl flex flex-col lg:flex-row min-h-[500px]">
               
-              <div className="lg:w-2/3 relative">
+              <div className="relative w-full lg:w-2/3 h-72 sm:h-96 lg:h-auto overflow-hidden">
                 {featuredArticle.coverImage ? (
                   <OptimizedImage 
                     src={featuredArticle.coverImage} 
                     alt={featuredArticle.title} 
                     priority={true}
-                    className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out" 
+                    className="absolute inset-0 w-full h-full object-cover transform-gpu group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform" 
                   />
                 ) : (
                   <div className="absolute inset-0 w-full h-full bg-brand-dark flex flex-col items-center justify-center pattern-dots-sm text-brand-surface/20">
@@ -111,10 +111,13 @@ export default function ArticlesIndex() {
                     <span className="font-heading font-bold text-xl tracking-widest uppercase">Samastha Graph</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/40 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-brand-dark"></div>
+                <div 
+                  className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-t from-brand-dark via-brand-dark/40 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-brand-dark/40 lg:via-50% lg:to-brand-dark lg:to-90%" 
+                  aria-hidden="true"
+                />
               </div>
 
-              <div className="lg:w-1/3 relative z-10 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-t from-brand-dark to-transparent lg:bg-none">
+              <div className="relative z-10 w-full lg:w-1/3 p-8 lg:p-12 flex flex-col justify-center bg-brand-dark">
                 <div className="flex items-center gap-3 mb-6">
                   <span className="bg-brand-gold text-brand-dark text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     {featuredArticle.category || 'News'}
