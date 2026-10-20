@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Typescope CSS Integration */
+
+/* Font Family Declarations */
+:root {
+  --font-anek-malayalam: "Anek Malayalam", sans-serif;
+}
+
+.font-anek-malayalam {
+  font-family: "Anek Malayalam", sans-serif;
+}
+
 @layer base {
   body {
     @apply bg-brand-light text-gray-800 font-sans antialiased selection:bg-brand-gold selection:text-brand-dark;

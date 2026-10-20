@@ -6,8 +6,8 @@ import { OptimizedImage } from "~/components/OptimizedImage";
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {
-    title: 'font-malayalam text-3xl sm:text-4xl md:text-[42px] lg:text-[46px]',
-    body: 'font-malayalam',
+    title: 'font-anek-malayalam text-3xl sm:text-4xl md:text-[42px] lg:text-[46px]',
+    body: 'font-anek-malayalam',
     align: 'text-left'
   },
   'theme-cinematic': {
@@ -229,11 +229,19 @@ export default function ArticlePage() {
     <div className="article-page-container bg-white font-sans text-gray-900 min-h-screen flex flex-col selection:bg-[#c8a136]/30 selection:text-gray-900">
       {/* GLOBAL STYLES FOR ANIMATIONS & TYPOGRAPHY */}
       <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Malayalam:wght@400;500;600;700;800;900&family=Noto+Serif+Malayalam:wght@400;600;700&family=Poppins:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anek+Malayalam:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Malayalam:wght@400;500;600;700;800;900&family=Noto+Serif+Malayalam:wght@400;600;700&family=Poppins:wght@500;600;700&display=swap');
         
+        :root {
+          --font-anek-malayalam: "Anek Malayalam", sans-serif;
+        }
+
+        .font-anek-malayalam {
+          font-family: "Anek Malayalam", sans-serif;
+        }
+
         .font-poppins { font-family: 'Poppins', sans-serif; }
         .font-inter { font-family: 'Inter', sans-serif; }
-        .font-malayalam { font-family: 'Noto Sans Malayalam', sans-serif; }
+        .font-malayalam { font-family: 'Anek Malayalam', 'Noto Sans Malayalam', sans-serif; }
 
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -276,7 +284,7 @@ export default function ArticlePage() {
           </div>
 
           {/* 1. Article Title */}
-          <h1 className={`font-bold text-[#111827] tracking-tight leading-[1.25] mb-4 text-balance ${activeTheme.title}`}>
+          <h1 className={`font-bold text-[#111827] tracking-tight leading-[1.25] mb-4 text-balance font-anek-malayalam ${activeTheme.title}`}>
             {article.title}
           </h1>
 
@@ -285,11 +293,11 @@ export default function ArticlePage() {
             {authorName && (
               <>
                 {authorDetails?.id ? (
-                  <Link to={`/authors/${authorDetails.id}`} className="text-[#c22849] hover:underline font-semibold font-malayalam transition-colors">
+                  <Link to={`/authors/${authorDetails.id}`} className="text-[#c22849] hover:underline font-semibold font-anek-malayalam transition-colors">
                     {authorName}
                   </Link>
                 ) : (
-                  <span className="text-[#c22849] font-semibold font-malayalam">
+                  <span className="text-[#c22849] font-semibold font-anek-malayalam">
                     {authorName}
                   </span>
                 )}
@@ -329,7 +337,7 @@ export default function ArticlePage() {
           {/* 4. Lead Paragraph / Standfirst (Centered & Italic) */}
           {article.excerpt && (
             <div className="my-6 sm:my-8 px-2 sm:px-6">
-              <p className="font-malayalam italic text-center text-gray-700 text-base sm:text-lg md:text-[19px] leading-[1.85] sm:leading-[1.95] max-w-3xl mx-auto">
+              <p className="font-anek-malayalam italic text-center text-gray-700 text-base sm:text-lg md:text-[19px] leading-[1.85] sm:leading-[1.95] max-w-3xl mx-auto">
                 {article.excerpt}
               </p>
             </div>
@@ -437,7 +445,7 @@ export default function ArticlePage() {
 
           {/* 6. Main Article Body */}
           <article 
-            className="article-body font-malayalam text-[#1f2937] text-[17px] sm:text-[18px] md:text-[19px] leading-[2.05] sm:leading-[2.15] tracking-normal mt-8 prose prose-lg max-w-none text-left [&_p]:mb-6 [&_p]:text-[#1f2937] [&_p]:leading-[2.05] [&_h1]:text-gray-900 [&_h2]:text-gray-900 [&_h2]:font-bold [&_h2]:text-2xl [&_h2]:sm:text-3xl [&_h2]:mt-10 [&_h2]:mb-4 [&_h3]:text-gray-900 [&_h3]:font-bold [&_h3]:text-xl [&_h3]:sm:text-2xl [&_h3]:mt-8 [&_h3]:mb-3 [&_strong]:text-gray-900 [&_strong]:font-bold [&_a]:text-[#15664a] [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[#c22849] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-700 [&_blockquote]:my-6 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_li]:mb-2"
+            className="article-body font-anek-malayalam text-[#1f2937] text-[17px] sm:text-[18px] md:text-[19px] leading-[2.05] sm:leading-[2.15] tracking-normal mt-8 prose prose-lg max-w-none text-left [&_p]:mb-6 [&_p]:text-[#1f2937] [&_p]:leading-[2.05] [&_h1]:text-gray-900 [&_h2]:text-gray-900 [&_h2]:font-bold [&_h2]:text-2xl [&_h2]:sm:text-3xl [&_h2]:mt-10 [&_h2]:mb-4 [&_h3]:text-gray-900 [&_h3]:font-bold [&_h3]:text-xl [&_h3]:sm:text-2xl [&_h3]:mt-8 [&_h3]:mb-3 [&_strong]:text-gray-900 [&_strong]:font-bold [&_a]:text-[#15664a] [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[#c22849] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-700 [&_blockquote]:my-6 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_li]:mb-2"
             dangerouslySetInnerHTML={{ __html: article.htmlBody }}
           />
 
@@ -460,7 +468,7 @@ export default function ArticlePage() {
                     </Link>
                   )}
                 </div>
-                <h4 className="text-xl font-bold text-[#15664a] font-malayalam">
+                <h4 className="text-xl font-bold text-[#15664a] font-anek-malayalam">
                   {authorDetails.nameMl || authorDetails.name}
                 </h4>
                 {authorDetails.role && (
@@ -491,7 +499,7 @@ export default function ArticlePage() {
                     </div>
                     <div className="p-5 flex flex-col flex-grow">
                       <div className="text-xs font-bold uppercase tracking-wider text-[#c8a136] mb-2">{rel.category || 'Article'}</div>
-                      <h4 className="text-base font-semibold text-gray-900 group-hover:text-[#15664a] transition-colors leading-snug mb-3 line-clamp-2 font-malayalam">
+                      <h4 className="text-base font-semibold text-gray-900 group-hover:text-[#15664a] transition-colors leading-snug mb-3 line-clamp-2 font-anek-malayalam">
                         {rel.title}
                       </h4>
                       {rel.publishedAt && (

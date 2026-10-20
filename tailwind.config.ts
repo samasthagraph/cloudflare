@@ -15,10 +15,11 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', '"Noto Sans Malayalam"', 'sans-serif'],
+        sans: ['Inter', '"Anek Malayalam"', '"Noto Sans Malayalam"', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
-        malayalam: ['"Noto Sans Malayalam"', 'sans-serif'],
-        heading: ['Poppins', '"Noto Sans Malayalam"', 'sans-serif'],
+        malayalam: ['"Anek Malayalam"', '"Noto Sans Malayalam"', 'sans-serif'],
+        'anek-malayalam': ['"Anek Malayalam"', 'sans-serif'],
+        heading: ['Poppins', '"Anek Malayalam"', '"Noto Sans Malayalam"', 'sans-serif'],
         inter: ['Inter', 'sans-serif'],
       }
     },

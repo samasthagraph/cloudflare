@@ -125,11 +125,11 @@ export default function ArticlesIndex() {
                   </span>
                 </div>
                 
-                <h2 className="text-3xl md:text-4xl font-heading font-malayalam font-bold text-white mb-6 leading-tight group-hover:text-brand-gold transition-colors duration-300 line-clamp-3 md:line-clamp-2">
+                <h2 className="text-3xl md:text-4xl font-heading font-anek-malayalam font-bold text-white mb-6 leading-tight group-hover:text-brand-gold transition-colors duration-300 line-clamp-3 md:line-clamp-2">
                   {featuredArticle.title}
                 </h2>
                 
-                <p className="text-brand-surface/90 text-lg mb-8 line-clamp-3 font-body">
+                <p className="text-brand-surface/90 text-lg mb-8 line-clamp-3 font-anek-malayalam">
                   {featuredArticle.excerpt || "Dive into our latest featured story and explore the insights shared by our community leaders."}
                 </p>
                 
@@ -178,11 +178,11 @@ export default function ArticlesIndex() {
                     )}
                   </div>
                   
-                  <h3 className="font-heading font-malayalam font-bold text-xl text-brand-dark mb-3 line-clamp-2 group-hover:text-brand-gold transition-colors leading-snug">
+                  <h3 className="font-heading font-anek-malayalam font-bold text-xl text-brand-dark mb-3 line-clamp-2 group-hover:text-brand-gold transition-colors leading-snug">
                     {article.title}
                   </h3>
                   
-                  <p className="text-sm text-gray-600 line-clamp-3 mb-6 flex-grow font-body">
+                  <p className="text-sm text-gray-600 line-clamp-3 mb-6 flex-grow font-anek-malayalam">
                     {article.excerpt || "Read the full article to discover more about this topic."}
                   </p>
                   
