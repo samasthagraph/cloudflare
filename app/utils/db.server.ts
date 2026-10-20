@@ -110,6 +110,14 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS media (
+          id TEXT PRIMARY KEY,
+          filename TEXT UNIQUE NOT NULL,
+          mime_type TEXT NOT NULL,
+          data TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
       `);
 
       // Safe incremental column migrations for videos
@@ -774,4 +782,40 @@ export async function saveDbAuthors(db: D1Database, authors: any[]): Promise<boo
     throw err;
   }
 }
+
+// ---------------- MEDIA ---------------- //
+
+export async function getDbMedia(db: D1Database | undefined, filenameOrId: string): Promise<{ mimeType: string; data: string } | null> {
+  if (!db) return null;
+  try {
+    await ensureTablesExist(db);
+    const row: any = await db.prepare("SELECT mime_type, data FROM media WHERE filename = ? OR id = ? LIMIT 1").bind(filenameOrId, filenameOrId).first();
+    if (!row) return null;
+    return {
+      mimeType: row.mime_type,
+      data: row.data
+    };
+  } catch (err) {
+    console.warn("Error fetching media from D1:", err);
+    return null;
+  }
+}
+
+export async function saveDbMedia(db: D1Database, id: string, filename: string, mimeType: string, dataBase64: string): Promise<boolean> {
+  try {
+    await ensureTablesExist(db);
+    await db.prepare(`
+      INSERT INTO media (id, filename, mime_type, data, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(filename) DO UPDATE SET
+        mime_type = excluded.mime_type,
+        data = excluded.data
+    `).bind(id, filename, mimeType, dataBase64).run();
+    return true;
+  } catch (err) {
+    console.error("Error saving media to D1:", err);
+    throw err;
+  }
+}
+
 

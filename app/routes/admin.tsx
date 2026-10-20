@@ -28,14 +28,15 @@ import {
   Heading1, Heading2, Heading3, Heading4, Strikethrough, Minus, User, Share2,
   ExternalLink, Radio, Rss, PanelTop, PanelBottom, Sparkles, Users, Headphones,
   UserCircle, PhoneCall, Info, ArrowRight, Layers, Box, CheckCircle2, MessageSquare,
-  Layout
+  Layout, Upload, Image as ImageIcon, AlertCircle
 } from 'lucide-react';
 import { getSessionStorage } from "../sessions.server";
 import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId, fetchLiveYouTubeVideos } from "../utils/youtube";
 import {
   getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting, getDbAuthors,
   saveDbArticle, saveDbVideo, saveDbPodcast, saveDbProgram, saveDbSetting, saveDbAuthors,
-  deleteDbArticle, deleteDbVideo, deleteDbPodcast, deleteDbProgram
+  deleteDbArticle, deleteDbVideo, deleteDbPodcast, deleteDbProgram,
+  getDbMedia, saveDbMedia
 } from "../utils/db.server";
 
 
@@ -58,6 +59,10 @@ function validateImageUrl(url: string | undefined | null): boolean {
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     // Specifically reject ibb.co as per previous rules
     if (trimmed.includes("ibb.co")) return false;
+    // Reject HTML/webpage URLs that are not direct images
+    if (/\.html?($|\?|#)/i.test(trimmed)) return false;
+    // Reject Facebook CDN URLs (they block hotlinking and expire)
+    if (trimmed.includes("fbcdn.net") || trimmed.includes("lookaside.fbsbx.com")) return false;
     return true;
   }
   
@@ -508,6 +513,55 @@ export const action = async ({ request, context }: any) => {
     return json({ success: true, message: "Production deployment triggered successfully!" });
   }
 
+  if (intent === "uploadMedia") {
+    const fileData = formData.get("fileData") as string;
+    let filename = (formData.get("filename") as string) || "";
+    const mimeType = (formData.get("mimeType") as string) || "image/webp";
+
+    if (!fileData) {
+      return json({ error: "No image file data provided." }, { status: 400 });
+    }
+
+    const ext = mimeType === "image/png" ? ".png" : mimeType === "image/jpeg" ? ".jpg" : ".webp";
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    const safeName = filename
+      ? filename.replace(/[^a-zA-Z0-9._-]/g, "_").toLowerCase()
+      : `img_${timestamp}_${random}${ext}`;
+
+    const uniqueFilename = safeName.includes(".")
+      ? `${safeName.substring(0, safeName.lastIndexOf("."))}_${random}${safeName.substring(safeName.lastIndexOf("."))}`
+      : `${safeName}_${random}${ext}`;
+    const id = `media_${timestamp}_${random}`;
+    const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
+
+    if (env?.DB) {
+      try {
+        await saveDbMedia(env.DB, id, uniqueFilename, mimeType, base64Data);
+      } catch (dbErr: any) {
+        console.error("D1 saveDbMedia error:", dbErr);
+        return json({ error: "Failed to save image to database: " + (dbErr?.message || "DB error") }, { status: 500 });
+      }
+    }
+
+    if (typeof process !== "undefined" && (process as any).cwd) {
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const localDir = path.resolve(process.cwd(), "public/media");
+        if (!fs.existsSync(localDir)) {
+          fs.mkdirSync(localDir, { recursive: true });
+        }
+        const buffer = Buffer.from(base64Data, 'base64');
+        fs.writeFileSync(path.join(localDir, uniqueFilename), buffer);
+      } catch (e) {
+        // ignore in non-node env
+      }
+    }
+
+    return json({ success: true, url: `/media/${uniqueFilename}`, filename: uniqueFilename });
+  }
+
   const githubToken = env?.GITHUB_TOKEN || "";
   const owner = "samasthagraph";
   const repo = "cloudflare";
@@ -777,10 +831,9 @@ export const action = async ({ request, context }: any) => {
       const body = formData.get("body") as string;
       const date = formData.get("publishedAt") as string || new Date().toISOString().split('T')[0];
 
-      if (!validateImageUrl(coverImage)) return json({ error: "Invalid cover image URL." }, { status: 400 });
+      if (!validateImageUrl(coverImage)) return json({ error: "Invalid cover image URL. Direct image URLs or uploaded media required (HTML webpages or Facebook links cannot be used)." }, { status: 400 });
 
-
-      const finalSlug = newSlug || originalSlug || title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      const finalSlug = (sanitizeSlug(newSlug, title) || (originalSlug ? originalSlug.toLowerCase() : `article-${Date.now()}`)).toLowerCase();
 
       const language = formData.get("language") as string || "ml";
       const originalLanguage = formData.get("originalLanguage") as string;
@@ -1424,9 +1477,95 @@ export default function AdminDashboard() {
   // Editor state
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editorContent, setEditorContent] = useState("");
+  const [articleCoverImage, setArticleCoverImage] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState("");
   const [youtubePreviewId, setYoutubePreviewId] = useState("");
   const [youtubeInput, setYoutubeInput] = useState("");
   const [platformsState, setPlatformsState] = useState(platformSettings?.platforms || []);
+
+  useEffect(() => {
+    if (editingItem && view.includes("Article")) {
+      setArticleCoverImage(editingItem.coverImage || "");
+    }
+  }, [editingItem, view]);
+
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageUploadError("Please select a valid image file.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageUploadError("");
+
+    try {
+      const img = new Image();
+      const reader = new FileReader();
+
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = (event) => {
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let { width, height } = img;
+            const maxDim = 1600;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const webpData = canvas.toDataURL("image/webp", 0.82);
+              resolve(webpData);
+            } else {
+              resolve(event.target?.result as string);
+            }
+          };
+          img.onerror = () => reject(new Error("Failed to process image"));
+          img.src = event.target?.result as string;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const base64Data = await base64Promise;
+      const cleanFileName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_") + ".webp";
+
+      const uploadForm = new FormData();
+      uploadForm.append("intent", "uploadMedia");
+      uploadForm.append("filename", cleanFileName);
+      uploadForm.append("mimeType", "image/webp");
+      uploadForm.append("fileData", base64Data);
+
+      const res = await fetch("/admin", {
+        method: "POST",
+        body: uploadForm,
+      });
+
+      const data: any = await res.json();
+      if (data.url) {
+        setArticleCoverImage(data.url);
+      } else if (data.error) {
+        setImageUploadError(data.error);
+      }
+    } catch (err: any) {
+      setImageUploadError(err.message || "Upload failed. Please try again.");
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = "";
+    }
+  };
 
   const isDeploying = navigation.state === "submitting" && navigation.formData?.get("intent") === "deploy";
   const isSubmitting = navigation.state === "submitting" && !isDeploying;
@@ -1487,13 +1626,16 @@ ${item.body}`;
   };
 
   const openArticleEditor = (article?: any) => {
+    setImageUploadError("");
     if (article) {
       setEditingItem(article);
       setEditorContent(article.body || "");
+      setArticleCoverImage(article.coverImage || "");
       setView("editArticle");
     } else {
       setEditingItem(null);
       setEditorContent("");
+      setArticleCoverImage("");
       setView("newArticle");
     }
     setIsMobileMenuOpen(false);
@@ -3222,9 +3364,98 @@ ${item.body}`;
                 )}
 
                 {view.includes("Article") && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image URL</label>
-                    <input type="text" name="coverImage" defaultValue={editingItem?.coverImage} className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none" placeholder="https://..." />
+                  <div className="mb-6 space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">Cover Image</label>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                      <div className="relative flex-1 w-full">
+                        <input
+                          type="text"
+                          name="coverImage"
+                          value={articleCoverImage}
+                          onChange={(e) => {
+                            setArticleCoverImage(e.target.value);
+                            setImageUploadError("");
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-[#15664a] outline-none text-sm"
+                          placeholder="Paste image URL (https://...) or upload an image"
+                        />
+                        {articleCoverImage && (
+                          <button
+                            type="button"
+                            onClick={() => setArticleCoverImage("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                            title="Clear image"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-sm bg-gray-50 hover:bg-gray-100 text-sm font-semibold text-gray-700 transition-colors shrink-0 ${isUploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <Upload className="w-4 h-4 text-[#15664a]" />
+                        <span>{isUploadingImage ? "Optimizing & Uploading..." : "Upload from Device"}</span>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          onChange={handleImageFileUpload}
+                          className="hidden"
+                          disabled={isUploadingImage}
+                        />
+                      </label>
+                    </div>
+
+                    {/* URL Warning Helper */}
+                    {articleCoverImage && (articleCoverImage.includes("fbcdn.net") || articleCoverImage.includes("facebook.com") || /\.html?($|\?|#)/i.test(articleCoverImage)) && (
+                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2.5 rounded-sm">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                        <span>
+                          <strong>Unsupported Image Link:</strong> Facebook CDN links or HTML webpages cannot be displayed. Please upload the image file directly from your device or paste a direct image URL (e.g. ending in .jpg, .png, .webp).
+                        </span>
+                      </div>
+                    )}
+
+                    {imageUploadError && (
+                      <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 p-2.5 rounded-sm">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{imageUploadError}</span>
+                      </div>
+                    )}
+
+                    {/* Live Preview Card */}
+                    <div className="p-4 border border-gray-200 rounded-sm bg-gray-50 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Thumbnail Preview</p>
+                        {articleCoverImage && (
+                          <span className="text-xs text-emerald-700 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="aspect-video w-full max-w-sm bg-gray-100 relative overflow-hidden rounded-sm border border-gray-200 flex items-center justify-center">
+                        {articleCoverImage ? (
+                          <img
+                            src={articleCoverImage}
+                            className="w-full h-full object-cover"
+                            alt="Cover Preview"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                              const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        
+                        <div
+                          className={`w-full h-full flex flex-col items-center justify-center text-gray-400 p-4 text-center ${articleCoverImage ? 'hidden' : 'flex'}`}
+                        >
+                          <ImageIcon className="w-8 h-8 mb-1.5 opacity-40 text-gray-500" />
+                          <p className="text-xs text-gray-500 font-medium">No cover image specified</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">A branded Samastha Graph geometric card will be displayed as fallback</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 

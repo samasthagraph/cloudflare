@@ -55,6 +55,16 @@ export function OptimizedImage({
       }
     }
 
+    // Check if the URL is obviously an HTML page or known invalid image URL
+    if (currentSrc && (/\.(html?|php|asp|aspx)(\?|#|$)/i.test(currentSrc) || currentSrc.includes("fbcdn.net"))) {
+      if (fallbackSrc && currentSrc !== fallbackSrc) {
+        setCurrentSrc(fallbackSrc);
+        return;
+      }
+      setError(true);
+      return;
+    }
+
     // If a fallbackSrc was provided and hasn't been tried yet
     if (fallbackSrc && currentSrc !== fallbackSrc && attempt < 3) {
       setCurrentSrc(fallbackSrc);
@@ -68,12 +78,15 @@ export function OptimizedImage({
   if (!currentSrc || error) {
     return (
       <div 
-        className={`bg-brand-surface/20 flex flex-col items-center justify-center text-brand-muted ${className}`} 
+        className={`bg-gradient-to-br from-[#1b3b2e] to-[#0f241c] flex flex-col items-center justify-center text-white/70 relative overflow-hidden select-none ${className}`} 
         style={{ width, height }}
       >
-        <ImageIcon className="opacity-50 mb-2" size={24} />
-        <span className="text-[10px] uppercase font-bold tracking-wider opacity-60 px-2 text-center">
-          {!src ? 'Missing' : 'Unavailable'}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#c8a136_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1.5 text-[#c8a136] backdrop-blur-sm border border-white/10">
+          <ImageIcon size={20} />
+        </div>
+        <span className="text-[10px] font-semibold tracking-wider text-white/60 uppercase font-heading">
+          Samastha Graph
         </span>
       </div>
     );
