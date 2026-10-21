@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { getSessionStorage } from "../sessions.server";
 import { fetchYouTubePlaylistVideos, extractYouTubePlaylistId, fetchLiveYouTubeVideos } from "../utils/youtube";
+import { fetchLiveSpotifyPodcasts, getPodcastShows } from "../utils/podcasts.server";
+import { syncLatestMedia, syncLatestMediaIfNeeded } from "../utils/sync.server";
 import {
   getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting, getDbAuthors,
   saveDbArticle, saveDbVideo, saveDbPodcast, saveDbProgram, saveDbSetting, saveDbAuthors,
@@ -240,6 +242,10 @@ export const loader = async ({ request, context }: any) => {
   const session = await getSession(request.headers.get("Cookie"));
   if (!session.get("adminAuthenticated")) {
     throw redirect("/admin/login");
+  }
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
   }
   let spotlightSettings: any = null;
   let platformSettings: any = null;
@@ -467,6 +473,21 @@ export const loader = async ({ request, context }: any) => {
     }
   }
 
+  try {
+    const shows = getPodcastShows(podcastShowsSettings?.shows);
+    if (shows && shows.length > 0) {
+      const liveEpisodes = await fetchLiveSpotifyPodcasts(shows);
+      if (liveEpisodes.length > 0) {
+        liveEpisodes.forEach((ep: any) => {
+          if (!podcastMap.has(ep.slug)) podcastMap.set(ep.slug, ep);
+        });
+        podcasts = Array.from(podcastMap.values()).sort((a: any, b: any) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
+      }
+    }
+  } catch (e) {
+    console.warn("Live Podcast sync warning in admin loader:", e);
+  }
+
   return json({
     articles,
     videos,
@@ -511,6 +532,18 @@ export const action = async ({ request, context }: any) => {
     if (!hook) return json({ error: "Deploy hook missing" }, { status: 500 });
     await fetch(hook, { method: "POST" });
     return json({ success: true, message: "Production deployment triggered successfully!" });
+  }
+
+  if (intent === "syncMedia") {
+    if (!env?.DB) {
+      return json({ error: "D1 database connection not found." }, { status: 500 });
+    }
+    const syncRes = await syncLatestMedia(env.DB, { force: true });
+    return json({
+      success: syncRes.success,
+      intent: "syncMedia",
+      message: syncRes.message || "Media synchronization completed."
+    });
   }
 
   if (intent === "uploadMedia") {
@@ -1568,10 +1601,15 @@ export default function AdminDashboard() {
   };
 
   const isDeploying = navigation.state === "submitting" && navigation.formData?.get("intent") === "deploy";
-  const isSubmitting = navigation.state === "submitting" && !isDeploying;
+  const isSyncing = navigation.state === "submitting" && navigation.formData?.get("intent") === "syncMedia";
+  const isSubmitting = navigation.state === "submitting" && !isDeploying && !isSyncing;
 
   const handleDeploy = () => {
     submit({ intent: "deploy" }, { method: "post" });
+  };
+
+  const handleSyncMedia = () => {
+    submit({ intent: "syncMedia" }, { method: "post" });
   };
 
   const handleDelete = (slug: string, type: 'article' | 'video' | 'podcast') => {
@@ -2044,6 +2082,17 @@ ${item.body}`;
             >
               <ExternalLink size={14} /> View Live Site
             </Link>
+
+            <button
+              type="button"
+              onClick={handleSyncMedia}
+              disabled={isSyncing || isDeploying || isSubmitting}
+              className="flex items-center gap-1.5 bg-[#2D5A46] hover:bg-[#234737] text-white px-3.5 py-1.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-50 shadow-sm"
+              title="Auto-fetch and sync all latest YouTube videos and Anchor podcasts to the database"
+            >
+              <RefreshCw size={13} className={isSyncing ? "animate-spin" : ""} />
+              <span>{isSyncing ? "Syncing Media..." : "Sync Media"}</span>
+            </button>
 
             <button
               onClick={handleDeploy}

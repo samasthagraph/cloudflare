@@ -155,6 +155,19 @@ export async function ensureTablesExist(db: D1Database): Promise<void> {
         } catch (e) {}
       }
 
+      // Safe incremental column migrations for podcasts
+      const podcastColumns = [
+        "ALTER TABLE podcasts ADD COLUMN show_id TEXT",
+        "ALTER TABLE podcasts ADD COLUMN spotify_url TEXT",
+        "ALTER TABLE podcasts ADD COLUMN status TEXT DEFAULT 'published'",
+        "ALTER TABLE podcasts ADD COLUMN language TEXT DEFAULT 'ml'"
+      ];
+      for (const colSql of podcastColumns) {
+        try {
+          await db.prepare(colSql).run();
+        } catch (e) {}
+      }
+
       tablesEnsured = true;
     } catch (e) {
       console.warn("Table verification / creation warning:", e);
@@ -460,19 +473,29 @@ export async function getDbPodcasts(db?: D1Database): Promise<any[]> {
   try {
     await ensureTablesExist(db);
     const { results } = await db.prepare("SELECT * FROM podcasts ORDER BY episode_number DESC, published_at DESC").all();
-    return (results || []).map((row: any) => ({
-      slug: row.slug,
-      title: row.title,
-      description: row.description,
-      audioUrl: row.audio_url,
-      duration: row.duration,
-      coverImage: row.cover_image,
-      show: row.show_name,
-      showName: row.show_name,
-      episodeNumber: row.episode_number,
-      publishedAt: row.published_at,
-      type: "podcast"
-    }));
+    return (results || []).map((row: any) => {
+      const showName = row.show_name || "";
+      const showId = row.show_id || (showName ? showName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '-') : 'samastha-graph');
+      return {
+        slug: row.slug,
+        title: row.title,
+        description: row.description,
+        audioUrl: row.audio_url,
+        duration: row.duration,
+        coverImage: row.cover_image,
+        image: row.cover_image,
+        artwork: row.cover_image,
+        show: showName,
+        showName: showName,
+        showId: showId,
+        episodeNumber: row.episode_number,
+        spotifyUrl: row.spotify_url || "",
+        status: row.status || "published",
+        language: row.language || "ml",
+        publishedAt: row.published_at,
+        type: "podcast"
+      };
+    });
   } catch (err) {
     console.warn("Error fetching podcasts from D1:", err);
     return [];
@@ -485,6 +508,8 @@ export async function getDbPodcastBySlug(db: D1Database | undefined, slug: strin
     await ensureTablesExist(db);
     const row: any = await db.prepare("SELECT * FROM podcasts WHERE slug = ?").bind(slug).first();
     if (!row) return null;
+    const showName = row.show_name || "";
+    const showId = row.show_id || (showName ? showName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '-') : 'samastha-graph');
     return {
       slug: row.slug,
       title: row.title,
@@ -492,9 +517,15 @@ export async function getDbPodcastBySlug(db: D1Database | undefined, slug: strin
       audioUrl: row.audio_url,
       duration: row.duration,
       coverImage: row.cover_image,
-      show: row.show_name,
-      showName: row.show_name,
+      image: row.cover_image,
+      artwork: row.cover_image,
+      show: showName,
+      showName: showName,
+      showId: showId,
       episodeNumber: row.episode_number,
+      spotifyUrl: row.spotify_url || "",
+      status: row.status || "published",
+      language: row.language || "ml",
       publishedAt: row.published_at,
       type: "podcast"
     };
@@ -507,11 +538,14 @@ export async function getDbPodcastBySlug(db: D1Database | undefined, slug: strin
 export async function saveDbPodcast(db: D1Database, podcast: any): Promise<boolean> {
   try {
     await ensureTablesExist(db);
+    const showName = podcast.showName || podcast.show || podcast.category || "";
+    const showId = podcast.showId || podcast.show_id || (showName ? showName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '-') : 'samastha-graph');
+
     await db.prepare(`
       INSERT INTO podcasts (
         slug, title, description, audio_url, duration,
-        cover_image, show_name, episode_number, published_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        cover_image, show_name, show_id, episode_number, spotify_url, status, language, published_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(slug) DO UPDATE SET
         title = excluded.title,
         description = excluded.description,
@@ -519,7 +553,11 @@ export async function saveDbPodcast(db: D1Database, podcast: any): Promise<boole
         duration = excluded.duration,
         cover_image = excluded.cover_image,
         show_name = excluded.show_name,
+        show_id = excluded.show_id,
         episode_number = excluded.episode_number,
+        spotify_url = excluded.spotify_url,
+        status = excluded.status,
+        language = excluded.language,
         published_at = excluded.published_at,
         updated_at = CURRENT_TIMESTAMP
     `).bind(
@@ -528,9 +566,13 @@ export async function saveDbPodcast(db: D1Database, podcast: any): Promise<boole
       podcast.description || "",
       podcast.audioUrl || "",
       podcast.duration || "",
-      podcast.coverImage || "",
-      podcast.show || podcast.showName || "",
+      podcast.coverImage || podcast.image || podcast.artwork || "",
+      showName,
+      showId,
       Number(podcast.episodeNumber) || 1,
+      podcast.spotifyUrl || "",
+      podcast.status || "published",
+      podcast.language || "ml",
       podcast.publishedAt || new Date().toISOString()
     ).run();
     return true;

@@ -6,6 +6,7 @@ import { OptimizedImage } from "~/components/OptimizedImage";
 import { isMalayalam } from "~/utils/language";
 import { extractYouTubeId, getYouTubeThumbnail, fetchLiveYouTubeVideos, fetchSingleYouTubeVideo, fetchYouTubePlaylistVideos } from "~/utils/youtube";
 import { getDbVideos, getDbPrograms } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {
@@ -55,6 +56,11 @@ export const loader = async ({ params, context, request }: any) => {
   let allVideos: any[] = [];
 
   const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
+
   const githubToken = env.GITHUB_TOKEN;
   const githubOwner = env.GITHUB_OWNER || "samasthagraph";
   const githubRepo = env.GITHUB_REPO || "cloudflare";

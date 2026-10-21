@@ -15,6 +15,8 @@ export interface PodcastEpisode {
   slug: string;
   rawSlug?: string;
   showId: string;
+  showName?: string;
+  show?: string;
   showTitle: string;
   showSubtitle?: string;
   showImage?: string;
@@ -218,6 +220,8 @@ export async function fetchFeedEpisodes(show: PodcastShow): Promise<PodcastEpiso
         slug,
         rawSlug,
         showId: show.id,
+        showName: show.title,
+        show: show.title,
         showTitle: show.title,
         showSubtitle: show.subtitle || show.title,
         showImage: show.image || defaultImage,
@@ -235,7 +239,8 @@ export async function fetchFeedEpisodes(show: PodcastShow): Promise<PodcastEpiso
         spotifyUrl: link,
         status: 'published',
         category: show.subtitle || show.title || 'Podcast',
-        themePreset: 'theme-malayalam-standard'
+        themePreset: 'theme-malayalam-standard',
+        language: 'ml'
       };
     });
   } catch (e) {

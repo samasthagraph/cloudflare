@@ -3,11 +3,16 @@ import { isEnglish } from "~/utils/language";
 import { fetchYouTubePlaylistVideos } from "~/utils/youtube";
 import VideosIndex, { meta as originalMeta } from "./videos._index";
 import { getDbVideos, getDbPrograms, getDbSetting } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 export const meta: MetaFunction = originalMeta;
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
   const [dbVideos, dbPrograms, dbSpotlight] = await Promise.all([
     getDbVideos(env?.DB),
     getDbPrograms(env?.DB),

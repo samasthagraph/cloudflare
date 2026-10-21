@@ -24,10 +24,16 @@ export const meta: MetaFunction<typeof loader> = ({ data }: any) => {
 };
 
 import { getDbPrograms, getDbVideos } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 export const loader = async ({ params, context }: any) => {
   const { slug } = params;
   const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
+
   const [dbPrograms, dbVideos] = await Promise.all([
     getDbPrograms(env?.DB),
     getDbVideos(env?.DB)

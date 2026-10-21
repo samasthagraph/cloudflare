@@ -4,11 +4,16 @@ import PodcastsIndex, { meta as originalMeta } from "./podcasts._index";
 import { getPodcastShows, fetchLiveSpotifyPodcasts, type PodcastShow } from "~/utils/podcasts.server";
 import podcastShowsConfig from "../content/settings/podcast-shows.json";
 import { getDbPodcasts, getDbSetting } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 export const meta: MetaFunction = originalMeta;
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
   const [dbPodcasts, dbShowsSetting] = await Promise.all([
     getDbPodcasts(env?.DB),
     getDbSetting(env?.DB, "podcast-shows")

@@ -3,9 +3,10 @@ import { OptimizedImage } from "~/components/OptimizedImage";
 import { useLoaderData, Link } from "@remix-run/react";
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { isMalayalam } from "~/utils/language";
-import { extractYouTubeId, getYouTubeThumbnail, fetchYouTubePlaylistVideos } from "~/utils/youtube";
+import { extractYouTubeId, getYouTubeThumbnail, fetchYouTubePlaylistVideos, fetchLiveYouTubeVideos } from "~/utils/youtube";
 import { Disc, Play, Calendar, ChevronRight, Layers, X, ExternalLink, Sparkles } from "lucide-react";
 import { getDbVideos, getDbPrograms } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -37,6 +38,11 @@ const themeMap: Record<string, { title: string; body: string; align: string }> =
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const ctx = context as any;
   const env = ctx?.cloudflare?.env || ctx?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
+
   const { getDbSetting } = await import("~/utils/db.server");
   const [dbVideos, dbPrograms, dbSpotlight] = await Promise.all([
     getDbVideos(env?.DB),

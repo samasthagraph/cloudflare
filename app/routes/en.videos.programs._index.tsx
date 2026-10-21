@@ -5,6 +5,7 @@ import { Layers, ChevronRight } from "lucide-react";
 import { getYouTubeThumbnail } from "~/utils/youtube";
 import { CompactHero } from "~/components/CompactHero";
 import { getDbPrograms, getDbVideos } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 export const meta: MetaFunction = () => [
   { title: "Programs & Series • Samastha Graph" },
@@ -16,6 +17,11 @@ export const meta: MetaFunction = () => [
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
+
   const [dbPrograms, dbVideos] = await Promise.all([
     getDbPrograms(env?.DB),
     getDbVideos(env?.DB)

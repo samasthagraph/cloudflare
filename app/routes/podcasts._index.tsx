@@ -22,6 +22,7 @@ import { getCleanAudioUrl } from "~/utils/audio";
 import { fetchLiveSpotifyPodcasts, getPodcastShows, type PodcastShow, type PodcastEpisode } from "~/utils/podcasts.server";
 import podcastShowsConfig from "../content/settings/podcast-shows.json";
 import { getDbPodcasts, getDbSetting } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 const DEFAULT_ARTWORK = "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/46535697/46535697-1786530965061-a1e35ade3abba.jpg";
 
@@ -45,6 +46,10 @@ const formatTime = (seconds: number) => {
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const ctx = context as any;
   const env = ctx?.cloudflare?.env || ctx?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
   
   const [dbPodcasts, dbShowsSetting] = await Promise.all([
     getDbPodcasts(env?.DB),

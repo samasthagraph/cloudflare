@@ -8,6 +8,7 @@ import { PodcastRecommendations } from '../components/PodcastRecommendations';
 import { isEnglish } from '~/utils/language';
 import { fetchLiveSpotifyPodcasts } from '~/utils/podcasts.server';
 import { getDbPodcasts } from '~/utils/db.server';
+import { syncLatestMediaIfNeeded } from '~/utils/sync.server';
 
 const themeMap: Record<string, { title: string; body: string; align: string }> = {
   'theme-malayalam-standard': {
@@ -57,6 +58,11 @@ export const loader = async ({ params, context, request }: any) => {
   let allPodcasts: any[] = [];
 
   const env = context?.cloudflare?.env || context?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
+
   const githubToken = env.GITHUB_TOKEN;
   const githubOwner = env.GITHUB_OWNER || "samasthagraph";
   const githubRepo = env.GITHUB_REPO || "cloudflare";

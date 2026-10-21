@@ -5,9 +5,14 @@ import Index, { meta as originalMeta } from "./_index";
 import { fetchLiveSpotifyPodcasts } from "~/utils/podcasts.server";
 import { fetchLiveYouTubeVideos } from "~/utils/youtube";
 import { getDbArticles, getDbVideos, getDbPodcasts, getDbPrograms, getDbSetting } from "~/utils/db.server";
+import { syncLatestMediaIfNeeded } from "~/utils/sync.server";
 
 export const loader = async ({ context }: LoaderFunctionArgs) => {
   const env = (context as any)?.cloudflare?.env || (context as any)?.env || (typeof process !== 'undefined' ? process.env : {});
+
+  if (env?.DB) {
+    await syncLatestMediaIfNeeded(env.DB);
+  }
 
   // 1. Articles
   const [dbArticles, dbVideos, dbPodcasts, dbPrograms, dbHomepage, dbPodcastPlatforms] = await Promise.all([
